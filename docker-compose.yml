@@ -1,0 +1,62 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: forum_assurance
+      MYSQL_USER: forum
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-forum_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  app:
+    profiles: ["prod"]
+    build:
+      context: .
+      args:
+        APP_URL: ${APP_URL:-http://localhost}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: mysql://forum:${MYSQL_PASSWORD:-forum_password}@db:3306/forum_assurance
+      AUTH_URL: ${AUTH_URL:-http://localhost}
+      APP_URL: ${APP_URL:-http://localhost}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/public/uploads
+      - cv_files:/app/storage/cv
+
+  nginx:
+    profiles: ["prod"]
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+
+volumes:
+  db_data:
+  uploads:
+  cv_files:

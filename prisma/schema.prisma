@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum ParticipantType {
+  STUDENT
+  GRADUATE
+  PROFESSIONAL
+  TEACHER
+  RECRUITER
+  OTHER
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CANCELLED
+}
+
+enum PartnerTier {
+  INSTITUTIONAL
+  GOLD
+  SILVER
+  PARTNER
+  MEDIA
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(STAFF)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model EventSettings {
+  id               String    @id @default("main")
+  eventDate        DateTime?
+  venueName        String    @default("Casablanca")
+  address          String    @default("") @db.VarChar(2000)
+  city             String    @default("Casablanca")
+  sloganFr         String    @default("Choisis ton avenir")
+  sloganAr         String    @default("اختر مستقبلك")
+  contactEmail     String    @default("contact@forum-assurance.ma")
+  contactPhone     String    @default("+212 5 22 00 00 00")
+  facebook         String    @default("")
+  linkedin         String    @default("")
+  instagram        String    @default("")
+  youtube          String    @default("")
+  registrationOpen Boolean   @default(true)
+  capacity         Int       @default(1500)
+  heroImage        String    @default("") @db.VarChar(500)
+  updatedAt        DateTime  @updatedAt
+
+  @@map("event_settings")
+}
+
+model SiteSection {
+  key       String   @id
+  titleFr   String   @db.Text
+  titleAr   String   @db.Text
+  bodyFr    String   @db.LongText
+  bodyAr    String   @db.LongText
+  updatedAt DateTime @updatedAt
+
+  @@map("site_sections")
+}
+
+model WhyItem {
+  id        String  @id @default(cuid())
+  titleFr   String
+  titleAr   String
+  bodyFr    String  @db.Text
+  bodyAr    String  @db.Text
+  icon      String  @default("sparkles")
+  sortOrder Int     @default(0)
+  published Boolean @default(true)
+
+  @@map("why_items")
+}
+
+model Career {
+  id         String  @id @default(cuid())
+  titleFr    String
+  titleAr    String
+  summaryFr  String  @db.Text
+  summaryAr  String  @db.Text
+  icon       String  @default("briefcase")
+  sortOrder  Int     @default(0)
+  published  Boolean @default(true)
+
+  @@map("careers")
+}
+
+model ProgramItem {
+  id            String  @id @default(cuid())
+  startTime     String
+  endTime       String
+  titleFr       String
+  titleAr       String
+  descriptionFr String  @db.Text
+  descriptionAr String  @db.Text
+  location      String  @default("")
+  speakerName   String  @default("")
+  category      String  @default("plenary")
+  sortOrder     Int     @default(0)
+  published     Boolean @default(true)
+
+  @@map("program_items")
+}
+
+model Speaker {
+  id        String  @id @default(cuid())
+  name      String
+  roleFr    String
+  roleAr    String
+  org       String
+  bioFr     String  @db.Text
+  bioAr     String  @db.Text
+  photoUrl  String  @default("")
+  sortOrder Int     @default(0)
+  published Boolean @default(true)
+
+  @@map("speakers")
+}
+
+model Partner {
+  id        String      @id @default(cuid())
+  name      String
+  logoUrl   String      @default("")
+  website   String      @default("")
+  tier      PartnerTier @default(PARTNER)
+  sortOrder Int         @default(0)
+  published Boolean     @default(true)
+
+  @@map("partners")
+}
+
+model FaqItem {
+  id         String  @id @default(cuid())
+  questionFr String
+  questionAr String
+  answerFr   String  @db.Text
+  answerAr   String  @db.Text
+  sortOrder  Int     @default(0)
+  published  Boolean @default(true)
+
+  @@map("faq_items")
+}
+
+model GalleryItem {
+  id        String    @id @default(cuid())
+  type      MediaType @default(IMAGE)
+  url       String    @default("")
+  captionFr String    @default("")
+  captionAr String    @default("")
+  sortOrder Int       @default(0)
+  published Boolean   @default(true)
+
+  @@map("gallery_items")
+}
+
+model Registration {
+  id              String             @id @default(cuid())
+  reference       String             @unique
+  civility        String
+  lastName        String
+  firstName       String
+  email           String             @unique
+  phone           String
+  city            String
+  participantType ParticipantType
+  organization    String
+  educationLevel  String
+  fieldOfStudy    String             @default("")
+  studyYear       String             @default("")
+  interests       Json
+  sessions        Json
+  discoverySource String
+  expectations    String             @default("") @db.VarChar(4000)
+  portfolioUrl    String             @default("")
+  cvPath          String             @default("")
+  consentRules    Boolean
+  consentContact  Boolean            @default(false)
+  status          RegistrationStatus @default(CONFIRMED)
+  qrToken         String             @unique
+  emailSent       Boolean            @default(false)
+  emailError      String             @default("") @db.VarChar(1000)
+  checkedInAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([status])
+  @@index([participantType])
+  @@index([createdAt])
+  @@index([city])
+  @@map("registrations")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("contact_messages")
+}

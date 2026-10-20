@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+storage
+public/uploads
+.env
+.env.*
+!.env.example
+npm-debug.log*
+*.md
+agent-tools

@@ -1,0 +1,1 @@
+ALTER TABLE `event_settings` ADD COLUMN `heroImage` VARCHAR(500) NOT NULL DEFAULT '';
