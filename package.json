@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:backup": "powershell -ExecutionPolicy Bypass -File .\\scripts\\db-backup.ps1",
+    "db:restore": "powershell -ExecutionPolicy Bypass -File .\\scripts\\db-restore.ps1"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

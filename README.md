@@ -34,6 +34,28 @@ docker compose --profile prod exec app node --experimental-strip-types prisma/se
 
 Volumes : base MySQL, images publiques, CV privés.
 
+## Sauvegarde de la base de données
+
+Pour créer une sauvegarde locale de la base MySQL :
+
+```bash
+npm run db:backup
+```
+
+Les fichiers sont enregistrés dans `backups/` au format `.sql`.
+Pour restaurer une sauvegarde :
+
+```bash
+npm run db:restore -- backups/forum_assurance_20261020-120000.sql
+```
+
+Vous pouvez aussi lancer directement les scripts PowerShell :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\db-backup.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\db-restore.ps1 .\backups\forum_assurance_20261020-120000.sql
+```
+
 ## Rôles
 
 - Administration : contenus, paramètres, comptes, inscriptions.
