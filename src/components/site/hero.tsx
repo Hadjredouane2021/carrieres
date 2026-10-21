@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useRef, useState } from "react";
 import type { eventDateParts } from "@/lib/datetime";
 import { dictionary, tx, type Locale } from "@/lib/i18n";
 import { safeAssetUrl } from "@/lib/media";
@@ -36,6 +36,86 @@ function useCountdown(target: string | null) {
 
 const delay = (seconds: number) => ({ animationDelay: `${seconds}s` });
 
+const VIDEO = {
+  poster: "/video/assurcarriere-hero-poster.webp",
+  webm: "/video/assurcarriere-hero.webm",
+  mp4: "/video/assurcarriere-hero.mp4",
+};
+// Cadrage portrait : la skyline et le soleil se trouvent à droite du centre.
+const framing = "object-cover object-[62%_50%] md:object-center";
+
+// Le poster s'affiche tout de suite (image légère, prioritaire pour le LCP). La vidéo ne se charge qu'une fois le Hero
+// à l'écran, jamais en mouvement réduit ni en mode économie de données, puis apparaît en fondu au-dessus du poster.
+// Mémoïsé : le compte à rebours re-rend le Hero chaque seconde.
+const HeroVideo = memo(function HeroVideo({ reduce, poster, onPosterError }: { reduce: boolean; poster: string; onPosterError: () => void }) {
+  const video = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  // Un poster déjà en échec avant l'hydratation ne déclenche plus onError.
+  const watchPoster = useCallback(
+    (node: HTMLImageElement | null) => {
+      if (node?.complete && node.naturalWidth === 0) onPosterError();
+    },
+    [onPosterError],
+  );
+
+  useEffect(() => {
+    const node = video.current;
+    if (!node) return;
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+    // autoplay est posé ici plutôt que dans le HTML serveur, rendu avant de connaître la préférence de mouvement.
+    if (reduce || saveData) {
+      node.autoplay = false;
+      node.pause();
+      return;
+    }
+    node.muted = true;
+    node.autoplay = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Lecture refusée par le navigateur : le poster reste en place.
+        if (entry.isIntersecting) node.play().catch(() => undefined);
+        else node.pause();
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      node.pause();
+    };
+  }, [reduce]);
+
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        ref={watchPoster}
+        src={poster}
+        alt=""
+        fetchPriority="high"
+        onError={onPosterError}
+        className={cn("absolute inset-0 h-full w-full", framing)}
+      />
+      <video
+        ref={video}
+        muted
+        loop
+        playsInline
+        preload="none"
+        disablePictureInPicture
+        aria-hidden="true"
+        tabIndex={-1}
+        onPlaying={() => setPlaying(true)}
+        className={cn("absolute inset-0 h-full w-full transition-opacity duration-1000", framing, playing && !reduce ? "opacity-100" : "opacity-0")}
+      >
+        <source src={VIDEO.webm} type="video/webm" />
+        <source src={VIDEO.mp4} type="video/mp4" />
+      </video>
+    </>
+  );
+});
+
 // Les entrées sont animées en CSS pour que le Hero s'affiche avant l'hydratation.
 // La date arrive formatée par le serveur : les navigateurs ne s'accordent pas tous sur le fuseau de Casablanca.
 export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; when: ReturnType<typeof eventDateParts> }) {
@@ -48,6 +128,10 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
   const slogan = tx(locale, settings.slogan.fr, settings.slogan.ar);
   const photo = safeAssetUrl(settings.heroImage);
   const [photoFailed, setPhotoFailed] = useState(false);
+  const [posterFailed, setPosterFailed] = useState(false);
+  // Poster : l'image choisie dans Hero Studio, sinon celui de la vidéo ; en dernier recours, l'illustration.
+  const customPoster = photo && !photoFailed ? photo : null;
+  const onPosterError = useCallback(() => (customPoster ? setPhotoFailed(true) : setPosterFailed(true)), [customPoster]);
   const place = placeLabel(settings.venueName, settings.city) || settings.city;
   const seats = Math.max(settings.capacity - settings.confirmedCount, 0);
   const fill = settings.capacity > 0 ? Math.min(Math.max(settings.confirmedCount / settings.capacity, 0.03), 1) : 0;
@@ -61,10 +145,6 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
   const contentY = useTransform(scrollYProgress, [0, 1], [0, -80]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.75], [1, 0.2]);
 
-  // Une image déjà en échec avant l'hydratation ne déclenche plus onError.
-  const watchPhoto = useCallback((node: HTMLImageElement | null) => {
-    if (node?.complete && node.naturalWidth === 0) setPhotoFailed(true);
-  }, []);
 
   function spotlight(event: React.PointerEvent<HTMLElement>) {
     if (event.pointerType !== "mouse" || reduce) return;
@@ -86,44 +166,36 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
       onPointerMove={spotlight}
       className="group/hero relative isolate flex min-h-[100svh] flex-col overflow-hidden rounded-b-[2rem] bg-night text-white md:rounded-b-[2.75rem]"
     >
-      <Aurora />
-      {photo && !photoFailed ? (
-        <motion.div style={reduce ? undefined : { y: photoY }} className="absolute inset-0">
-          {/* Photo déposée depuis le tableau de bord. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            ref={watchPhoto}
-            src={photo}
-            alt=""
-            fetchPriority="high"
-            onError={() => setPhotoFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover object-center motion-safe:animate-kenburns"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-night via-night/55 to-night/25" />
-          <div className="absolute inset-0 bg-gradient-to-r from-night/75 via-night/25 to-transparent rtl:bg-gradient-to-l" />
-          <div className="absolute inset-0 bg-night/35 md:hidden" />
+      {!posterFailed ? (
+        <motion.div style={{ y: reduce ? 0 : photoY }} className="absolute inset-0">
+          <HeroVideo reduce={Boolean(reduce)} poster={customPoster ?? VIDEO.poster} onPosterError={onPosterError} />
+          <div className="absolute inset-0 bg-gradient-to-t from-night via-night/45 to-night/15" />
+          <div className="absolute inset-0 bg-gradient-to-r from-night/70 via-night/20 to-transparent rtl:bg-gradient-to-l" />
+          <div className="absolute inset-0 bg-night/10 md:hidden" />
         </motion.div>
-      ) : null}
-      <div className="noise pointer-events-none absolute inset-0 opacity-[0.18]" />
+      ) : (
+        <Aurora />
+      )}
+      <div className="noise pointer-events-none absolute inset-0 opacity-[0.12]" />
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover/hero:opacity-100"
-        style={{ background: "radial-gradient(560px circle at var(--spot-x, 50%) var(--spot-y, 30%), rgba(216,181,122,0.14), transparent 62%)" }}
+        style={{ background: "radial-gradient(560px circle at var(--spot-x, 50%) var(--spot-y, 30%), rgba(255,122,26,0.12), transparent 62%)" }}
       />
 
       <motion.div
-        style={reduce ? undefined : { y: contentY, opacity: contentOpacity }}
+        style={{ y: reduce ? 0 : contentY, opacity: reduce ? 1 : contentOpacity }}
         className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-end px-4 pb-10 pt-28 md:px-6 md:pb-12 md:pt-32"
       >
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3 motion-safe:animate-rise">
           <span className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.07] py-1.5 pe-4 ps-3 text-xs font-medium text-beige shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl">
             <span className="relative flex size-2">
               {status === "open" ? <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/70" /> : null}
-              <span className={cn("relative size-2 rounded-full", status === "open" ? "bg-emerald-400" : "bg-gold")} />
+              <span className={cn("relative size-2 rounded-full", status === "open" ? "bg-emerald-400" : "bg-sun")} />
             </span>
             {copy[status]}
           </span>
           <span className="flex items-center gap-3 text-[11px] uppercase tracking-[0.32em] text-beige/70">
-            <span className="h-px w-8 bg-gold/70" />
+            <span className="h-px w-8 bg-sun/80" />
             {copy.kicker}
           </span>
         </div>
@@ -143,7 +215,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
             <span className="inline-block motion-safe:animate-reveal" style={delay(0.2 + words.length * 0.06)}>
               <span
                 className={cn(
-                  "text-gold-sheen inline-block animate-shimmer pe-[0.12em]",
+                  "text-sun-sheen inline-block animate-shimmer pe-[0.12em]",
                   locale === "ar" ? "display" : "font-accent text-[1.08em] italic tracking-[-0.01em]",
                 )}
               >
@@ -158,11 +230,11 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
           <div className="flex shrink-0 flex-col gap-3 whitespace-nowrap sm:flex-row">
             <Link
               href="/inscription"
-              className="group/cta relative inline-flex h-14 items-center justify-between gap-4 overflow-hidden rounded-full bg-gold pe-2 ps-7 font-semibold text-night shadow-[0_18px_50px_-18px_rgba(216,181,122,0.9)] transition hover:bg-gold-bright"
+              className="group/cta relative inline-flex h-14 items-center justify-between gap-4 overflow-hidden rounded-full bg-sun pe-2 ps-7 font-semibold text-night shadow-[0_18px_50px_-18px_rgba(255,122,26,0.85)] transition hover:bg-sun-bright"
             >
               <span className="pointer-events-none absolute inset-y-0 start-0 w-1/3 -translate-x-[160%] -skew-x-12 bg-white/45 blur-md transition-transform duration-700 group-hover/cta:translate-x-[420%]" />
               <span className="relative">{copy.participate}</span>
-              <span className="relative grid size-10 place-items-center rounded-full bg-night text-gold transition-transform group-hover/cta:translate-x-0.5 rtl:group-hover/cta:-translate-x-0.5">
+              <span className="relative grid size-10 place-items-center rounded-full bg-night text-sun transition-transform group-hover/cta:translate-x-0.5 rtl:group-hover/cta:-translate-x-0.5">
                 <ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden="true" />
               </span>
             </Link>
@@ -179,7 +251,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
           className="relative mt-10 grid grid-cols-2 overflow-hidden rounded-[1.75rem] border border-white/12 bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_40px_100px_-30px_rgba(3,8,20,0.8)] backdrop-blur-2xl motion-safe:animate-rise md:mt-12 lg:flex"
           style={delay(0.9)}
         >
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-sun/60 to-transparent" />
           <Cell label={copy.when} className="lg:flex-1">
             <dd className="display text-xl leading-tight md:text-2xl">{when?.day ?? copy.date}</dd>
             {when ? (
@@ -197,7 +269,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
           {settings.eventDate ? (
             <Cell label={copy.startsIn} className="col-span-2 border-t border-white/10 md:col-span-1 lg:flex-[1.5] lg:border-s lg:border-t-0">
               {countdown?.done ? (
-                <dd className="display text-xl text-gold md:text-2xl">{copy.started}</dd>
+                <dd className="display text-xl text-sun md:text-2xl">{copy.started}</dd>
               ) : (
                 <dd className="flex items-start gap-2.5 sm:gap-3.5" role="timer">
                   {units.map(([label, value], index) => (
@@ -230,7 +302,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
             </dd>
             <dd className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
               <span
-                className="block h-full origin-left rounded-full bg-gradient-to-r from-gold to-gold-bright motion-safe:animate-grow rtl:origin-right rtl:bg-gradient-to-l"
+                className="block h-full origin-left rounded-full bg-gradient-to-r from-sun to-sun-bright motion-safe:animate-grow rtl:origin-right rtl:bg-gradient-to-l"
                 style={{ width: `${fill * 100}%`, ...delay(1.2) }}
               />
             </dd>
@@ -247,7 +319,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
                   {careers.map((career, index) => (
                     <li key={`${career}-${index}`} className="flex items-center gap-8 whitespace-nowrap text-xs uppercase tracking-[0.26em] text-beige/65 md:text-sm">
                       {career}
-                      <span className="size-1.5 rotate-45 bg-gold/80" aria-hidden="true" />
+                      <span className="size-1.5 rotate-45 bg-sun/80" aria-hidden="true" />
                     </li>
                   ))}
                 </ul>
@@ -263,7 +335,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
 function Cell({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
   return (
     <div className={cn("min-w-0 px-5 py-5 md:px-7 md:py-6", className)}>
-      <dt className="mb-2.5 text-[10px] font-medium uppercase tracking-[0.26em] text-gold">{label}</dt>
+      <dt className="mb-2.5 text-[10px] font-medium uppercase tracking-[0.26em] text-sun">{label}</dt>
       {children}
     </div>
   );

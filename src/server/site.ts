@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { db } from "@/lib/prisma";
-import { fallbackSections, type SiteData } from "@/lib/site-types";
+import { fallbackSections, publicCopy, type SiteData } from "@/lib/site-types";
 
 function pair(fr: string, ar: string) {
   return { fr, ar };
@@ -27,7 +27,7 @@ export async function getPublicSite(): Promise<SiteData> {
   for (const section of sections) {
     sectionMap[section.key] = {
       title: pair(section.titleFr, section.titleAr),
-      body: pair(section.bodyFr, section.bodyAr),
+      body: pair(publicCopy(section.bodyFr), publicCopy(section.bodyAr)),
     };
   }
 

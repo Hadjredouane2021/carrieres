@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const MAX_BYTES = 16 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MIN_WIDTH = 1600;
+const DEFAULT_POSTER = "/video/assurcarriere-hero-poster.webp";
 
 type Draft = { url: string; name: string; size: number; width: number; height: number };
 
@@ -74,18 +75,19 @@ export function HeroStudio({
     image.src = url;
   }
 
-  const shown = draft?.url ?? (photoMissing ? null : photo);
+  // Sans image personnalisée, le site affiche le poster tiré de la vidéo du Hero.
+  const shown = draft?.url ?? (photoMissing ? null : photo) ?? DEFAULT_POSTER;
   const status = draft
     ? { label: "Aperçu non publié", tone: "bg-amber-100 text-amber-900", dot: "bg-amber-500" }
     : photo && photoMissing
-      ? { label: "Photo introuvable sur le serveur : illustration affichée", tone: "bg-red-50 text-red-800", dot: "bg-red-600" }
+      ? { label: "Image introuvable sur le serveur : poster de la vidéo affiché", tone: "bg-red-50 text-red-800", dot: "bg-red-600" }
       : photo
-        ? { label: "Photo en ligne", tone: "bg-emerald-50 text-emerald-900", dot: "bg-emerald-500" }
-        : { label: "Illustration par défaut", tone: "bg-mist text-institution", dot: "bg-institution/50" };
+        ? { label: "Poster personnalisé en ligne", tone: "bg-emerald-50 text-emerald-900", dot: "bg-emerald-500" }
+        : { label: "Poster par défaut de la vidéo", tone: "bg-mist text-institution", dot: "bg-institution/50" };
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <section className="overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-night/5">
+      <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-night/[0.07]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-night/5 px-5 py-4">
           <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium", status.tone)}>
             <span className={cn("size-1.5 rounded-full", status.dot)} />
@@ -140,9 +142,9 @@ export function HeroStudio({
       </section>
 
       <div className="grid gap-4">
-        <form action={saveHeroImage} className="grid gap-4 rounded-[1.75rem] bg-white p-5 ring-1 ring-night/5">
+        <form action={saveHeroImage} className="grid gap-4 rounded-2xl bg-white p-5 ring-1 ring-night/[0.07]">
           <div>
-            <h2 className="text-lg font-medium text-night">Nouvelle photo</h2>
+            <h2 className="text-lg font-medium text-night">Nouveau poster</h2>
             <p className="mt-1 text-sm text-institution">JPG, PNG ou WebP, 16 Mo maximum.</p>
           </div>
           <label
@@ -159,8 +161,8 @@ export function HeroStudio({
             }}
             className={cn(
               "group relative grid cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-night/15 bg-mist/50 text-center transition hover:border-gold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold",
-              draft ? "aspect-[16/10] border-solid border-gold/60" : "px-6 py-9",
-              dragging && "border-gold bg-gold/10",
+              draft ? "aspect-[16/10] border-solid border-sun/60" : "px-6 py-9",
+              dragging && "border-sun bg-dawn",
             )}
           >
             {draft ? (
@@ -174,7 +176,7 @@ export function HeroStudio({
               </>
             ) : (
               <span className="grid justify-items-center gap-2">
-                <span className="grid size-12 place-items-center rounded-2xl bg-white text-[#9a7640] shadow-sm transition group-hover:scale-105">
+                <span className="grid size-12 place-items-center rounded-2xl bg-white text-sun-ink shadow-sm transition group-hover:scale-105">
                   <CloudUpload className="size-6" aria-hidden="true" />
                 </span>
                 <span className="mt-1 font-medium text-night">Glissez une image ici</span>
@@ -212,14 +214,14 @@ export function HeroStudio({
         </form>
 
         {photo ? (
-          <form action={saveHeroImage} className="rounded-[1.75rem] bg-white p-5 ring-1 ring-night/5">
+          <form action={saveHeroImage} className="rounded-2xl bg-white p-5 ring-1 ring-night/[0.07]">
             <input type="hidden" name="remove" value="on" />
-            <p className="text-sm text-institution">Retirer la photo affiche l&apos;illustration aurore par défaut.</p>
+            <p className="text-sm text-institution">Retirer l&apos;image rétablit le poster par défaut, tiré de la vidéo.</p>
             {confirmRemove ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 <RemoveButton />
                 <button type="button" onClick={() => setConfirmRemove(false)} className="h-10 rounded-full px-4 text-sm text-institution transition hover:bg-mist">
-                  Garder la photo
+                  Garder cette image
                 </button>
               </div>
             ) : (
@@ -229,15 +231,15 @@ export function HeroStudio({
                 className="mt-3 inline-flex h-10 items-center gap-2 rounded-full border border-night/15 px-4 text-sm text-night transition hover:bg-mist"
               >
                 <RotateCcw className="size-4" aria-hidden="true" />
-                Revenir à l&apos;illustration
+                Revenir au poster par défaut
               </button>
             )}
           </form>
         ) : null}
 
-        <section className="rounded-[1.75rem] bg-night p-5 text-beige">
-          <h2 className="text-[11px] font-medium uppercase tracking-[0.26em] text-gold">Conseils de cadrage</h2>
-          <ul className="mt-3 grid gap-2.5 text-sm leading-6 text-beige/85">
+        <section className="rounded-2xl bg-night p-5 text-white">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.26em] text-sun">Conseils de cadrage</h2>
+          <ul className="mt-3 grid gap-2.5 text-sm leading-6 text-white/85">
             <li>Format paysage, 1920 × 1080 px au minimum.</li>
             <li>Gardez le sujet au centre : sur mobile, les côtés sont recadrés.</li>
             <li>Le texte occupe le bas à gauche ; évitez d&apos;y placer un détail important.</li>
@@ -257,7 +259,7 @@ function PublishButton({ disabled }: { disabled: boolean }) {
       className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-night px-5 text-sm font-semibold text-beige transition hover:bg-institution disabled:cursor-not-allowed disabled:opacity-40"
     >
       {pending ? <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" /> : null}
-      {pending ? "Publication…" : "Publier la photo"}
+      {pending ? "Publication…" : "Publier le poster"}
     </button>
   );
 }
@@ -266,7 +268,7 @@ function RemoveButton() {
   const { pending } = useFormStatus();
   return (
     <button disabled={pending} className="h-10 rounded-full bg-red-700 px-4 text-sm font-medium text-white transition hover:bg-red-800 disabled:opacity-60">
-      {pending ? "Retrait…" : "Oui, retirer la photo"}
+      {pending ? "Retrait…" : "Oui, retirer l'image"}
     </button>
   );
 }
@@ -314,7 +316,7 @@ function MiniHero({
             ))}
           </span>
         )}
-        <span className={cn("rounded-full", mobile ? "size-[9cqw] border border-white/30" : "h-[3.6cqw] w-[10cqw] bg-gold")} />
+        <span className={cn("rounded-full", mobile ? "size-[9cqw] border border-white/30" : "h-[3.6cqw] w-[10cqw] bg-sun")} />
       </div>
       <div className={cn("absolute inset-x-0 bottom-0", mobile ? "p-[6cqw] pb-[10cqw]" : "p-[5cqw] pb-[5.5cqw]")}>
         <span className={cn("inline-flex items-center gap-[1cqw] rounded-full border border-white/20 bg-white/10 text-beige", mobile ? "px-[3cqw] py-[1.2cqw] text-[3.4cqw]" : "px-[1.4cqw] py-[0.5cqw] text-[1.3cqw]")}>
@@ -323,7 +325,7 @@ function MiniHero({
         </span>
         {/* La taille précède l'interligne : tailwind-merge retire un leading placé avant un text-[…]. */}
         <p className={cn("display mt-[2.5cqw] text-balance", mobile ? "text-[11cqw]" : "max-w-[80%] text-[6.2cqw]", "leading-[0.92]")}>{title}</p>
-        <p className={cn("text-gold-sheen font-accent mt-[0.6cqw] italic", mobile ? "text-[11.5cqw]" : "text-[6.6cqw]", "leading-none")}>{slogan}</p>
+        <p className={cn("text-sun-sheen font-accent mt-[0.6cqw] italic", mobile ? "text-[11.5cqw]" : "text-[6.6cqw]", "leading-none")}>{slogan}</p>
         <div
           className={cn(
             "mt-[4cqw] grid grid-cols-2 rounded-[2cqw] border border-white/15 bg-white/[0.08] backdrop-blur-md",
@@ -335,7 +337,7 @@ function MiniHero({
             ["Lieu", place],
           ].map(([label, value], index) => (
             <span key={label} className={cn(mobile ? "p-[3.5cqw]" : "p-[1.6cqw]", index && "border-s border-white/10")}>
-              <span className="block uppercase tracking-[0.2em] text-gold" style={{ fontSize: "0.7em" }}>{label}</span>
+              <span className="block uppercase tracking-[0.2em] text-sun" style={{ fontSize: "0.7em" }}>{label}</span>
               <span className="display mt-[0.5cqw] block truncate">{value}</span>
             </span>
           ))}

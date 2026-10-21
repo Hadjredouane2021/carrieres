@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { DashboardCharts } from "@/components/admin/charts";
+import { CircleCheck, CircleX, QrCode, Users } from "lucide-react";
+import { AdminHeader, Panel } from "@/components/admin/kit";
 import { Flash } from "@/components/admin/shell";
+import { buttonVariants } from "@/components/ui/button";
 import { labelOf, PARTICIPANT_TYPES } from "@/lib/constants";
 import { db } from "@/lib/prisma";
+import { cn } from "@/lib/utils";
 import { requireUser } from "@/server/session";
 
 export const instant = false;
@@ -34,23 +38,40 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     };
   });
 
+  const stats = [
+    ["Inscriptions", total, Users, "text-night"],
+    ["Confirmées", confirmed, CircleCheck, "text-sky-700"],
+    ["Présents", present, QrCode, "text-emerald-700"],
+    ["Annulées", cancelled, CircleX, "text-red-700"],
+  ] as const;
+
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="display text-4xl text-night">Tableau de bord</h1>
-        <p className="text-institution">Vue d'ensemble de l'édition 2026.</p>
-      </div>
+      <AdminHeader
+        eyebrow="Pilotage"
+        title="Tableau de bord"
+        description="Vue d'ensemble de l'édition 2026."
+        actions={
+          <>
+            <Link href="/admin/checkin" className={cn(buttonVariants({ variant: "sun", size: "md" }))}>
+              <QrCode className="size-4" aria-hidden="true" />
+              Accueil QR
+            </Link>
+            <Link href="/admin/inscriptions" className={cn(buttonVariants({ variant: "outline", size: "md" }))}>
+              Toutes les inscriptions
+            </Link>
+          </>
+        }
+      />
       <Flash error={query.error} ok={query.ok} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Inscriptions", total],
-          ["Confirmées", confirmed],
-          ["Présents", present],
-          ["Annulées", cancelled],
-        ].map(([label, value]) => (
-          <article key={String(label)} className="rounded-3xl bg-white p-5">
-            <p className="text-sm text-institution">{label}</p>
-            <p className="display mt-2 text-4xl text-night">{value}</p>
+        {stats.map(([label, value, StatIcon, tone]) => (
+          <article key={label} className="rounded-2xl bg-white p-5 ring-1 ring-night/[0.07]">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted">{label}</p>
+              <StatIcon className={cn("size-5", tone)} aria-hidden="true" />
+            </div>
+            <p className="display mt-3 text-4xl tabular-nums text-night">{value.toLocaleString("fr-MA")}</p>
           </article>
         ))}
       </div>
@@ -61,21 +82,29 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           count: item._count._all,
         }))}
       />
-      <section className="rounded-3xl bg-white p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg text-night">Dernières inscriptions</h2>
-          <Link href="/admin/inscriptions" className="text-sm text-institution">Tout voir</Link>
-        </div>
-        <ul className="divide-y divide-night/10">
+      <Panel
+        title="Dernières inscriptions"
+        actions={
+          <Link href="/admin/inscriptions" className="text-sm font-medium text-institution underline-offset-4 hover:underline">
+            Tout voir
+          </Link>
+        }
+      >
+        <ul className="divide-y divide-night/[0.07]">
           {recent.map((row) => (
-            <li key={row.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
-              <span>{row.firstName} {row.lastName}</span>
-              <span className="text-institution">{row.reference}</span>
+            <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+              <span className="font-medium text-night">
+                {row.firstName} {row.lastName}
+              </span>
+              <span className="flex items-center gap-3 text-muted">
+                <span className="font-mono text-xs">{row.reference}</span>
+                <span>{row.createdAt.toLocaleDateString("fr-MA")}</span>
+              </span>
             </li>
           ))}
-          {recent.length === 0 ? <li className="py-4 text-institution">Aucune inscription pour le moment.</li> : null}
+          {recent.length === 0 ? <li className="py-6 text-center text-muted">Aucune inscription pour le moment.</li> : null}
         </ul>
-      </section>
+      </Panel>
     </div>
   );
 }

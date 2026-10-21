@@ -1,6 +1,6 @@
 import { Hero } from "@/components/site/hero";
+import { HomeCareers, HomeCta, HomeGallery, HomeLineup, HomeProgram, HomeRibbon, HomeWhy } from "@/components/site/home-sections";
 import { PublicFrame } from "@/components/site/public-frame";
-import { About, Careers, ContactBand, Cta, Faq, Gallery, Partners, Program, Speakers, Why } from "@/components/site/sections";
 import { eventDateParts } from "@/lib/datetime";
 import { tx } from "@/lib/i18n";
 import { getLocale } from "@/server/session";
@@ -10,6 +10,7 @@ export const instant = false;
 
 export default async function HomePage() {
   const [site, locale] = await Promise.all([getPublicSite(), getLocale()]);
+  const when = eventDateParts(site.settings.eventDate, locale);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -30,17 +31,17 @@ export default async function HomePage() {
   return (
     <PublicFrame locale={locale} site={site}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <Hero site={site} locale={locale} when={eventDateParts(site.settings.eventDate, locale)} />
-      <About site={site} locale={locale} />
-      <Why site={site} locale={locale} />
-      <Careers site={site} locale={locale} />
-      <Program site={site} locale={locale} />
-      <Speakers site={site} locale={locale} />
-      <Partners site={site} locale={locale} />
-      <Faq site={site} locale={locale} />
-      <Gallery site={site} locale={locale} />
-      <Cta site={site} locale={locale} />
-      <ContactBand site={site} locale={locale} />
+      {/* Fond blanc : les coins arrondis du Hero s'ouvrent sur la première section. */}
+      <div className="bg-white">
+        <Hero site={site} locale={locale} when={when} />
+        <HomeWhy site={site} locale={locale} />
+        <HomeRibbon site={site} locale={locale} when={when} />
+        <HomeCareers site={site} locale={locale} />
+        <HomeProgram site={site} locale={locale} when={when} />
+        <HomeLineup site={site} locale={locale} />
+        <HomeGallery site={site} locale={locale} />
+        <HomeCta site={site} locale={locale} when={when} />
+      </div>
     </PublicFrame>
   );
 }

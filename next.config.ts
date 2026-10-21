@@ -19,6 +19,8 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // Indicateur de développement masqué ; les erreurs de compilation et d'exécution restent affichées.
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   experimental: {
