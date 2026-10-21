@@ -27,6 +27,9 @@ export function toCasablancaInput(value: Date | null) {
 
 export function fromCasablancaInput(value: string) {
   if (!value) return null;
-  const date = new Date(`${value}:00+01:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const asUtc = new Date(`${value}:00Z`);
+  if (Number.isNaN(asUtc.getTime())) return null;
+  // Décalage réel du fuseau à cette date (le Maroc n'est pas toujours en UTC+1).
+  const shown = new Date(`${toCasablancaInput(asUtc)}:00Z`);
+  return new Date(asUtc.getTime() - (shown.getTime() - asUtc.getTime()));
 }

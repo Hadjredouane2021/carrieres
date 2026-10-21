@@ -1,11 +1,15 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { unlink } from "fs/promises";
+import path from "path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { MediaType, PartnerTier, RegistrationStatus, Role } from "@/generated/prisma/client";
 import { fromCasablancaInput } from "@/lib/datetime";
+import { normalizeLayout } from "@/lib/home-layout";
 import { db } from "@/lib/prisma";
+import { safeLinkUrl } from "@/lib/media";
 import { savePublicImage } from "@/lib/uploads";
 import { userSchema } from "@/lib/validators";
 import { deliverRegistration } from "@/server/notifications";
@@ -96,21 +100,53 @@ export async function saveHeroImage(formData: FormData) {
     try {
       heroImage = await savePublicImage(file, 16 * 1024 * 1024);
     } catch (error) {
-      done("/admin", error instanceof Error ? error.message : "Image refusée.");
+      done("/admin/hero", error instanceof Error ? error.message : "Image refusée.");
     }
   } else if (!remove) {
-    done("/admin", "Choisissez une image JPG, PNG ou WebP.");
+    done("/admin/hero", "Choisissez une image JPG, PNG ou WebP.");
   }
   await db().eventSettings.update({ where: { id: "main" }, data: { heroImage } });
   refreshSite();
-  done("/admin");
+  done("/admin/hero");
+}
+
+export async function saveHeroText(formData: FormData) {
+  await requireUser(true);
+  const titleFr = text(formData, "titleFr");
+  const sloganFr = text(formData, "sloganFr");
+  if (!titleFr || !sloganFr) done("/admin/hero", "Le titre et le slogan français sont obligatoires.");
+  const titleAr = text(formData, "titleAr");
+  const eventLinkUrl = text(formData, "eventLinkUrl");
+  if (eventLinkUrl && !safeLinkUrl(eventLinkUrl)) done("/admin/hero", "Le lien doit commencer par https:// ou par / pour une page du site.");
+  await db().$transaction([
+    db().siteSection.upsert({
+      where: { key: "hero" },
+      create: { key: "hero", titleFr, titleAr, bodyFr: text(formData, "introFr"), bodyAr: text(formData, "introAr") },
+      update: { titleFr, titleAr, bodyFr: text(formData, "introFr"), bodyAr: text(formData, "introAr") },
+    }),
+    db().eventSettings.update({
+      where: { id: "main" },
+      data: {
+        sloganFr,
+        sloganAr: text(formData, "sloganAr"),
+        eventDate: fromCasablancaInput(text(formData, "eventDate")),
+        venueName: text(formData, "venueName") || "Casablanca",
+        address: text(formData, "address").slice(0, 2000),
+        eventLinkUrl,
+        eventLinkLabelFr: text(formData, "eventLinkLabelFr").slice(0, 120),
+        eventLinkLabelAr: text(formData, "eventLinkLabelAr").slice(0, 120),
+      },
+    }),
+  ]);
+  refreshSite();
+  done("/admin/hero");
 }
 
 export async function saveSection(formData: FormData) {
   await requireUser(true);
   const key = text(formData, "key");
-  if (!/^[a-z0-9-]{2,40}$/.test(key)) done("/admin/contenu", "Clé de section invalide.");
-  if (!text(formData, "titleFr") || !text(formData, "bodyFr")) done("/admin/contenu", "Le titre et le texte français sont obligatoires.");
+  if (!/^[a-z0-9-]{2,40}$/.test(key)) done("/admin/sections", "Clé de section invalide.");
+  if (!text(formData, "titleFr") || !text(formData, "bodyFr")) done("/admin/sections", "Le titre et le texte français sont obligatoires.");
   await db().siteSection.upsert({
     where: { key },
     create: {
@@ -128,7 +164,38 @@ export async function saveSection(formData: FormData) {
     },
   });
   refreshSite();
-  done("/admin/contenu");
+  done("/admin/sections");
+}
+
+async function updateLayout(change: (layout: ReturnType<typeof normalizeLayout>) => void) {
+  const settings = await db().eventSettings.findUnique({ where: { id: "main" }, select: { homeLayout: true } });
+  const layout = normalizeLayout(settings?.homeLayout);
+  change(layout);
+  await db().eventSettings.update({ where: { id: "main" }, data: { homeLayout: layout } });
+  refreshSite();
+}
+
+export async function moveSection(formData: FormData) {
+  await requireUser(true);
+  const key = text(formData, "key");
+  const step = text(formData, "direction") === "up" ? -1 : 1;
+  await updateLayout((layout) => {
+    const from = layout.findIndex((item) => item.key === key);
+    const to = from + step;
+    if (from < 0 || to < 0 || to >= layout.length) return;
+    [layout[from], layout[to]] = [layout[to], layout[from]];
+  });
+  done("/admin/sections");
+}
+
+export async function toggleSection(formData: FormData) {
+  await requireUser(true);
+  const key = text(formData, "key");
+  await updateLayout((layout) => {
+    const item = layout.find((entry) => entry.key === key);
+    if (item) item.visible = !item.visible;
+  });
+  done("/admin/sections");
 }
 
 export async function saveWhy(formData: FormData) {
@@ -344,30 +411,68 @@ export async function deleteGallery(formData: FormData) {
   done("/admin/galerie");
 }
 
+const REGISTRATION_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN", "CANCELLED"];
+
+function registrationsBack(formData: FormData) {
+  const back = text(formData, "back");
+  return back.startsWith("/admin/inscriptions") ? back : "/admin/inscriptions";
+}
+
+function backTo(path: string, error?: string): never {
+  const separator = path.includes("?") ? "&" : "?";
+  redirect(error ? `${path}${separator}error=${encodeURIComponent(error)}` : `${path}${separator}ok=1`);
+}
+
+function registrationIds(formData: FormData) {
+  return [...new Set(formData.getAll("id").map((value) => String(value).trim()).filter(Boolean))].slice(0, 500);
+}
+
+function refreshRegistrations() {
+  revalidatePath("/admin/inscriptions");
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
 export async function setRegistrationStatus(formData: FormData) {
   await requireUser(false);
-  const id = text(formData, "id");
+  const back = registrationsBack(formData);
+  const ids = registrationIds(formData);
   const status = text(formData, "status");
-  const allowed = ["PENDING", "CONFIRMED", "CHECKED_IN", "CANCELLED"];
-  if (!allowed.includes(status)) done("/admin/inscriptions", "Statut invalide.");
-  await db().registration.update({
-    where: { id },
+  if (!REGISTRATION_STATUSES.includes(status)) backTo(back, "Statut invalide.");
+  if (ids.length === 0) backTo(back, "Sélectionnez au moins une inscription.");
+  await db().registration.updateMany({
+    where: { id: { in: ids } },
     data: {
       status: status as RegistrationStatus,
       checkedInAt: status === "CHECKED_IN" ? new Date() : null,
     },
   });
-  revalidatePath("/admin/inscriptions");
-  revalidatePath("/");
-  done("/admin/inscriptions");
+  refreshRegistrations();
+  backTo(back);
+}
+
+export async function deleteRegistrations(formData: FormData) {
+  await requireUser(true);
+  const back = registrationsBack(formData);
+  const ids = registrationIds(formData);
+  if (ids.length === 0) backTo(back, "Sélectionnez au moins une inscription.");
+  const rows = await db().registration.findMany({ where: { id: { in: ids } }, select: { cvPath: true } });
+  await db().registration.deleteMany({ where: { id: { in: ids } } });
+  await Promise.all(
+    rows
+      .filter((row) => /^[a-f0-9]{32}.pdf$/.test(row.cvPath))
+      .map((row) => unlink(path.join(process.cwd(), "storage", "cv", row.cvPath)).catch(() => undefined)),
+  );
+  refreshRegistrations();
+  backTo(back);
 }
 
 export async function resendRegistration(formData: FormData) {
   await requireUser(false);
-  const id = text(formData, "id");
-  await deliverRegistration(id);
+  const back = registrationsBack(formData);
+  await deliverRegistration(text(formData, "id"));
   revalidatePath("/admin/inscriptions");
-  done("/admin/inscriptions");
+  backTo(back);
 }
 
 export async function checkInByToken(formData: FormData) {
@@ -390,7 +495,8 @@ export async function markMessage(formData: FormData) {
     where: { id: text(formData, "id") },
     data: { read: flag(formData, "read") },
   });
-  done("/admin/messages");
+  revalidatePath("/admin");
+  backTo(`/admin/messages?id=${encodeURIComponent(text(formData, "id"))}`);
 }
 
 export async function saveUser(formData: FormData) {
@@ -407,6 +513,8 @@ export async function saveUser(formData: FormData) {
   if (!parsed.data.id && password.length < 10) done("/admin/utilisateurs", "Le mot de passe doit contenir au moins 10 caractères.");
   if (password && password.length < 10) done("/admin/utilisateurs", "Le mot de passe doit contenir au moins 10 caractères.");
   const role = parsed.data.role as Role;
+  const taken = await db().user.findFirst({ where: { email: parsed.data.email, NOT: parsed.data.id ? { id: parsed.data.id } : undefined }, select: { id: true } });
+  if (taken) done("/admin/utilisateurs", "Cette adresse e-mail est déjà utilisée par un autre compte.");
   if (parsed.data.id) {
     const current = await db().user.findUnique({ where: { id: parsed.data.id } });
     if (!current) done("/admin/utilisateurs", "Compte introuvable.");

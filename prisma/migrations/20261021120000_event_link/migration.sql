@@ -1,0 +1,3 @@
+ALTER TABLE `event_settings` ADD COLUMN `eventLinkUrl` VARCHAR(500) NOT NULL DEFAULT '',
+    ADD COLUMN `eventLinkLabelFr` VARCHAR(191) NOT NULL DEFAULT '',
+    ADD COLUMN `eventLinkLabelAr` VARCHAR(191) NOT NULL DEFAULT '';

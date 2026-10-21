@@ -1,3 +1,5 @@
+import type { HomeLayout } from "@/lib/home-layout";
+
 export type Localized = { fr: string; ar: string };
 export type SectionCopy = { title: Localized; body: Localized };
 
@@ -18,6 +20,8 @@ export type SiteData = {
     capacity: number;
     confirmedCount: number;
     heroImage: string;
+    homeLayout: HomeLayout;
+    eventLink: { url: string; label: Localized };
   };
   sections: Record<string, SectionCopy>;
   why: { id: string; title: Localized; body: Localized; icon: string }[];
@@ -38,10 +42,44 @@ export type SiteData = {
   gallery: { id: string; type: "IMAGE" | "VIDEO"; url: string; caption: Localized }[];
 };
 
+export const FACET_KEYS = ["facet-1", "facet-2", "facet-3", "facet-4"] as const;
+
+export const fallbackFacets: Record<(typeof FACET_KEYS)[number], SectionCopy> = {
+  "facet-1": {
+    title: { fr: "Conférences", ar: "محاضرات" },
+    body: {
+      fr: "Des dirigeants et des experts racontent le secteur, ses défis et les métiers qui recrutent.",
+      ar: "مسؤولون وخبراء يتحدثون عن القطاع وتحدياته والمهن التي توظف.",
+    },
+  },
+  "facet-2": {
+    title: { fr: "Ateliers", ar: "ورشات" },
+    body: {
+      fr: "Des formats courts et concrets pour tester un métier, une méthode ou un outil.",
+      ar: "صيغ قصيرة وملموسة لتجربة مهنة أو منهجية أو أداة.",
+    },
+  },
+  "facet-3": {
+    title: { fr: "Job dating", ar: "لقاءات التوظيف" },
+    body: {
+      fr: "Rencontre les recruteurs en face à face et décroche un stage ou un premier emploi.",
+      ar: "التقِ بمسؤولي التوظيف مباشرة واحصل على تدريب أو أول وظيفة.",
+    },
+  },
+  "facet-4": {
+    title: { fr: "Networking", ar: "التواصل" },
+    body: {
+      fr: "Échange avec des pros, des écoles et d’autres étudiants autour d’un même avenir.",
+      ar: "تبادل مع المهنيين والمدارس والطلبة حول مستقبل مشترك.",
+    },
+  },
+};
+
 export const fallbackSections: Record<string, SectionCopy> = {
+  ...fallbackFacets,
   hero: {
     title: { fr: "Le Forum des Métiers de l'Assurance", ar: "منتدى مهن التأمين" },
-    body: { fr: "Choisis ton avenir", ar: "اختر مستقبلك" },
+    body: { fr: "", ar: "" },
   },
   about: {
     title: { fr: "Une journée pour tracer sa route", ar: "يوم لرسم مسارك" },

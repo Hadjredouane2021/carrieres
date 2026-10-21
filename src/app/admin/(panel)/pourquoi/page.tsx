@@ -1,38 +1,79 @@
-import { connection } from "next/server";
-import { Flash } from "@/components/admin/shell";
+import { Sparkles } from "lucide-react";
+import { DeleteButton, IconPicker } from "@/components/admin/kit-client";
+import { ContentLayout, EditLink, EditorHeader, EmptyState, FormField, LangFields, ListHeader, PublishedToggle, SaveButton, StatusDot } from "@/components/admin/kit";
+import { Flash, PageHeader } from "@/components/admin/shell";
+import { Icon } from "@/components/site/icons";
 import { db } from "@/lib/prisma";
+import { cn } from "@/lib/utils";
 import { deleteWhy, saveWhy } from "@/server/actions/admin";
+import { requireUser } from "@/server/session";
 
 export const instant = false;
 
 export default async function WhyAdminPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string; id?: string }> }) {
-  await connection();
+  await requireUser(true);
   const query = await searchParams;
   const items = await db().whyItem.findMany({ orderBy: { sortOrder: "asc" } });
   const current = items.find((item) => item.id === query.id);
+
   return (
-    <div className="grid gap-5">
-      <h1 className="display text-4xl text-night">Pourquoi participer</h1>
+    <div className="grid gap-6">
+      <PageHeader eyebrow="Site public" title="Pourquoi participer" intro="Les cartes du carrousel 3D de la section « Pourquoi participer »." />
       <Flash error={query.error} ok={query.ok} />
-      <form action={saveWhy} className="grid gap-3 rounded-3xl bg-white p-5">
-        {current ? <input type="hidden" name="id" value={current.id} /> : null}
-        <input className="field" name="titleFr" defaultValue={current?.titleFr ?? ""} required />
-        <input className="field" name="titleAr" dir="rtl" defaultValue={current?.titleAr ?? ""} />
-        <textarea className="field" name="bodyFr" defaultValue={current?.bodyFr ?? ""} required />
-        <textarea className="field" name="bodyAr" dir="rtl" defaultValue={current?.bodyAr ?? ""} />
-        <input className="field" name="icon" defaultValue={current?.icon ?? "sparkles"} />
-        <input className="field" name="sortOrder" type="number" defaultValue={current?.sortOrder ?? items.length + 1} />
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={current?.published ?? true} /> Publié</label>
-        <button className="h-11 rounded-full bg-night text-beige">{current ? "Mettre à jour" : "Ajouter"}</button>
-      </form>
-      <ul className="grid gap-2">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-            <a href={`?id=${item.id}`}>{item.titleFr}</a>
-            <form action={deleteWhy}><input type="hidden" name="id" value={item.id} /><button className="text-sm text-red-700">Supprimer</button></form>
-          </li>
-        ))}
-      </ul>
+      <ContentLayout
+        list={
+          <>
+            <ListHeader count={items.length} label={`carte${items.length > 1 ? "s" : ""}`} publicHref="/forum" />
+            {items.length === 0 ? (
+              <EmptyState icon={<Sparkles className="size-5" />} title="Aucune carte" text="Ajoutez la première carte avec le formulaire." />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {items.map((item, index) => (
+                  <article
+                    key={item.id}
+                    className={cn(
+                      "group relative flex flex-col gap-4 overflow-hidden rounded-[1.5rem] border border-white/10 bg-gradient-to-br from-[#1D3A70] to-[#0F2349] p-5 text-beige shadow-[0_20px_40px_-25px_rgba(11,27,58,0.7)]",
+                      current?.id === item.id && "ring-2 ring-gold",
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="grid size-11 place-items-center rounded-2xl bg-gold/15 text-gold">
+                        <Icon name={item.icon} className="size-5" />
+                      </span>
+                      <span className="display text-2xl text-white/15">{String(index + 1).padStart(2, "0")}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">{item.titleFr}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-beige/70">{item.bodyFr}</p>
+                    </div>
+                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-3">
+                      <StatusDot published={item.published} />
+                      <div className="flex items-center gap-1 rounded-full bg-white p-0.5">
+                        <EditLink href={`?id=${item.id}`} active={current?.id === item.id} />
+                        <DeleteButton action={deleteWhy} id={item.id} label={item.titleFr} />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </>
+        }
+        editor={
+          <form key={current?.id ?? "new"} action={saveWhy} className="admin-card grid gap-4 p-5 md:p-6">
+            <EditorHeader editing={Boolean(current)} title={current?.titleFr ?? ""} newLabel="Ajouter une carte" basePath="/admin/pourquoi" />
+            {current ? <input type="hidden" name="id" value={current.id} /> : null}
+            <LangFields label="Titre" name="title" fr={current?.titleFr} ar={current?.titleAr} required placeholder="Ex. Rencontrer les employeurs" />
+            <LangFields label="Texte" name="body" fr={current?.bodyFr} ar={current?.bodyAr} multiline required />
+            <IconPicker value={current?.icon ?? "sparkles"} />
+            <FormField label="Position">
+              <input className="field" name="sortOrder" type="number" defaultValue={current?.sortOrder ?? items.length + 1} />
+            </FormField>
+            <PublishedToggle checked={current?.published ?? true} />
+            <SaveButton editing={Boolean(current)} />
+          </form>
+        }
+      />
     </div>
   );
 }

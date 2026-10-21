@@ -1,37 +1,69 @@
-import { connection } from "next/server";
-import { Flash } from "@/components/admin/shell";
+import { HelpCircle } from "lucide-react";
+import { DeleteButton } from "@/components/admin/kit-client";
+import { ContentLayout, EditLink, EditorHeader, EmptyState, FormField, LangFields, ListHeader, PublishedToggle, SaveButton, StatusDot } from "@/components/admin/kit";
+import { Flash, PageHeader } from "@/components/admin/shell";
 import { db } from "@/lib/prisma";
+import { cn } from "@/lib/utils";
 import { deleteFaq, saveFaq } from "@/server/actions/admin";
+import { requireUser } from "@/server/session";
 
 export const instant = false;
 
 export default async function FaqAdminPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string; id?: string }> }) {
-  await connection();
+  await requireUser(true);
   const query = await searchParams;
   const items = await db().faqItem.findMany({ orderBy: { sortOrder: "asc" } });
   const current = items.find((item) => item.id === query.id);
+
   return (
-    <div className="grid gap-5">
-      <h1 className="display text-4xl text-night">FAQ</h1>
+    <div className="grid gap-6">
+      <PageHeader eyebrow="Site public" title="FAQ" intro="Les questions fréquentes, affichées en accordéon sur le site." />
       <Flash error={query.error} ok={query.ok} />
-      <form action={saveFaq} className="grid gap-3 rounded-3xl bg-white p-5">
-        {current ? <input type="hidden" name="id" value={current.id} /> : null}
-        <input className="field" name="questionFr" defaultValue={current?.questionFr ?? ""} required />
-        <input className="field" name="questionAr" dir="rtl" defaultValue={current?.questionAr ?? ""} />
-        <textarea className="field" name="answerFr" defaultValue={current?.answerFr ?? ""} required />
-        <textarea className="field" name="answerAr" dir="rtl" defaultValue={current?.answerAr ?? ""} />
-        <input className="field" name="sortOrder" type="number" defaultValue={current?.sortOrder ?? items.length + 1} />
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={current?.published ?? true} /> Publié</label>
-        <button className="h-11 rounded-full bg-night text-beige">{current ? "Mettre à jour" : "Ajouter"}</button>
-      </form>
-      <ul className="grid gap-2">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-            <a href={`?id=${item.id}`}>{item.questionFr}</a>
-            <form action={deleteFaq}><input type="hidden" name="id" value={item.id} /><button className="text-sm text-red-700">Supprimer</button></form>
-          </li>
-        ))}
-      </ul>
+      <ContentLayout
+        list={
+          <>
+            <ListHeader count={items.length} label={`question${items.length > 1 ? "s" : ""}`} publicHref="/faq" />
+            {items.length === 0 ? (
+              <EmptyState icon={<HelpCircle className="size-5" />} title="Aucune question" text="Ajoutez la première question avec le formulaire." />
+            ) : (
+              <div className="grid gap-3">
+                {items.map((item, index) => (
+                  <details key={item.id} className={cn("admin-card group overflow-hidden transition", current?.id === item.id && "ring-2 ring-gold")}>
+                    <summary className="flex cursor-pointer list-none items-center gap-4 p-4 [&::-webkit-details-marker]:hidden">
+                      <span className="display grid size-10 shrink-0 place-items-center rounded-xl bg-gold/15 text-sm text-[#8A6A33]">{String(index + 1).padStart(2, "0")}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-night">{item.questionFr}</span>
+                        <span className="mt-0.5 inline-flex"><StatusDot published={item.published} /></span>
+                      </span>
+                      <span className="grid size-8 place-items-center rounded-full bg-mist text-institution transition group-open:rotate-45">+</span>
+                    </summary>
+                    <div className="border-t border-night/[0.06] px-4 pb-4 pt-3">
+                      <p className="whitespace-pre-line text-sm leading-6 text-institution">{item.answerFr}</p>
+                      <div className="mt-3 flex justify-end gap-1">
+                        <EditLink href={`?id=${item.id}`} active={current?.id === item.id} />
+                        <DeleteButton action={deleteFaq} id={item.id} label={item.questionFr} />
+                      </div>
+                    </div>
+                  </details>
+                ))}
+              </div>
+            )}
+          </>
+        }
+        editor={
+          <form key={current?.id ?? "new"} action={saveFaq} className="admin-card grid gap-4 p-5 md:p-6">
+            <EditorHeader editing={Boolean(current)} title={current?.questionFr ?? ""} newLabel="Ajouter une question" basePath="/admin/faq" />
+            {current ? <input type="hidden" name="id" value={current.id} /> : null}
+            <LangFields label="Question" name="question" fr={current?.questionFr} ar={current?.questionAr} required placeholder="Ex. Qui peut participer ?" />
+            <LangFields label="Réponse" name="answer" fr={current?.answerFr} ar={current?.answerAr} multiline required />
+            <FormField label="Position">
+              <input className="field" name="sortOrder" type="number" defaultValue={current?.sortOrder ?? items.length + 1} />
+            </FormField>
+            <PublishedToggle checked={current?.published ?? true} />
+            <SaveButton editing={Boolean(current)} />
+          </form>
+        }
+      />
     </div>
   );
 }

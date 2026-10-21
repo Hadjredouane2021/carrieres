@@ -71,6 +71,10 @@ model EventSettings {
   registrationOpen Boolean   @default(true)
   capacity         Int       @default(1500)
   heroImage        String    @default("") @db.VarChar(500)
+  homeLayout       Json?
+  eventLinkUrl     String    @default("") @db.VarChar(500)
+  eventLinkLabelFr String    @default("")
+  eventLinkLabelAr String    @default("")
   updatedAt        DateTime  @updatedAt
 
   @@map("event_settings")

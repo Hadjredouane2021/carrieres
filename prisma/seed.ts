@@ -4,32 +4,34 @@ import { fallbackSections } from "../src/lib/site-types";
 import { db } from "../src/lib/prisma";
 
 async function main() {
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "";
-  const staffPassword = process.env.STAFF_PASSWORD ?? "";
-  if (adminPassword.length < 10 || staffPassword.length < 10) {
-    throw new Error("ADMIN_PASSWORD et STAFF_PASSWORD doivent contenir au moins 10 caractères.");
-  }
+  if (process.env.SEED_CONTENT_ONLY !== "true") {
+    const adminPassword = process.env.ADMIN_PASSWORD ?? "";
+    const staffPassword = process.env.STAFF_PASSWORD ?? "";
+    if (adminPassword.length < 10 || staffPassword.length < 10) {
+      throw new Error("ADMIN_PASSWORD et STAFF_PASSWORD doivent contenir au moins 10 caractères.");
+    }
 
-  await db().user.upsert({
-    where: { email: (process.env.ADMIN_EMAIL ?? "admin@forum-assurance.ma").toLowerCase() },
-    update: { name: process.env.ADMIN_NAME ?? "Administrateur FMA", role: "ADMIN", active: true, passwordHash: await bcrypt.hash(adminPassword, 12) },
-    create: {
-      email: (process.env.ADMIN_EMAIL ?? "admin@forum-assurance.ma").toLowerCase(),
-      name: process.env.ADMIN_NAME ?? "Administrateur FMA",
-      role: "ADMIN",
-      passwordHash: await bcrypt.hash(adminPassword, 12),
-    },
-  });
-  await db().user.upsert({
-    where: { email: (process.env.STAFF_EMAIL ?? "accueil@forum-assurance.ma").toLowerCase() },
-    update: { name: process.env.STAFF_NAME ?? "Accueil Forum", role: "STAFF", active: true, passwordHash: await bcrypt.hash(staffPassword, 12) },
-    create: {
-      email: (process.env.STAFF_EMAIL ?? "accueil@forum-assurance.ma").toLowerCase(),
-      name: process.env.STAFF_NAME ?? "Accueil Forum",
-      role: "STAFF",
-      passwordHash: await bcrypt.hash(staffPassword, 12),
-    },
-  });
+    await db().user.upsert({
+      where: { email: (process.env.ADMIN_EMAIL ?? "admin@forum-assurance.ma").toLowerCase() },
+      update: { name: process.env.ADMIN_NAME ?? "Administrateur FMA", role: "ADMIN", active: true, passwordHash: await bcrypt.hash(adminPassword, 12) },
+      create: {
+        email: (process.env.ADMIN_EMAIL ?? "admin@forum-assurance.ma").toLowerCase(),
+        name: process.env.ADMIN_NAME ?? "Administrateur FMA",
+        role: "ADMIN",
+        passwordHash: await bcrypt.hash(adminPassword, 12),
+      },
+    });
+    await db().user.upsert({
+      where: { email: (process.env.STAFF_EMAIL ?? "accueil@forum-assurance.ma").toLowerCase() },
+      update: { name: process.env.STAFF_NAME ?? "Accueil Forum", role: "STAFF", active: true, passwordHash: await bcrypt.hash(staffPassword, 12) },
+      create: {
+        email: (process.env.STAFF_EMAIL ?? "accueil@forum-assurance.ma").toLowerCase(),
+        name: process.env.STAFF_NAME ?? "Accueil Forum",
+        role: "STAFF",
+        passwordHash: await bcrypt.hash(staffPassword, 12),
+      },
+    });
+  }
 
   await db().eventSettings.upsert({
     where: { id: "main" },
@@ -48,6 +50,16 @@ async function main() {
       capacity: 1500,
     },
   });
+  if (process.env.SEED_CONTENT_ONLY === "true") {
+    await db().eventSettings.updateMany({
+      where: { id: "main", address: { contains: "??" } },
+      data: { address: "Le lieu exact sera confirmé aux inscrits." },
+    });
+    await db().eventSettings.updateMany({
+      where: { id: "main", sloganAr: { contains: "??" } },
+      data: { sloganAr: "اختر مستقبلك" },
+    });
+  }
 
   await db().siteSection.deleteMany();
   await db().siteSection.createMany({

@@ -51,6 +51,12 @@ body {
   letter-spacing: -0.045em;
 }
 
+.hero-title {
+  font-family: var(--font-hero), var(--font-display), sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
 .grain {
   background-image: radial-gradient(rgba(255, 255, 255, 0.16) 0.6px, transparent 0.6px);
   background-size: 3px 3px;
@@ -82,4 +88,25 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.admin-canvas {
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%),
+    radial-gradient(50rem 30rem at 0% 0%, color-mix(in srgb, var(--institution) 8%, transparent), transparent 70%),
+    #f5f7fb;
+}
+
+.admin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+}
+
+.admin-card {
+  border-radius: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--night) 6%, transparent);
+  background: white;
+  box-shadow:
+    0 1px 0 rgb(11 27 58 / 0.03),
+    0 12px 32px -18px rgb(11 27 58 / 0.18);
 }

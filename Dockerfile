@@ -5,10 +5,13 @@ RUN npm ci
 
 FROM node:24-bookworm-slim AS builder
 WORKDIR /app
+ARG APP_URL
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+ENV APP_URL=$APP_URL NEXT_PUBLIC_APP_URL=$APP_URL NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npx prisma generate && npm run build
+RUN export NEXT_DEPLOYMENT_ID="$(date +%Y%m%d%H%M%S)" && npx prisma generate && npm run build
 
 FROM deps AS prod-deps
 RUN npm prune --omit=dev
@@ -32,7 +35,7 @@ COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 RUN mkdir -p public/uploads storage/cv \
   && chown -R nextjs:nodejs public/uploads storage
 USER nextjs
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 8185
+ENV PORT=8185
 ENV HOSTNAME=0.0.0.0
 CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node server.js"]

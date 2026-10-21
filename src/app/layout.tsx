@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Montserrat, Space_Grotesk } from "next/font/google";
+import { PageTransition } from "@/components/page-transition";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });
+const hero = Montserrat({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-hero" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:8185"),
   title: {
     default: "Forum des Métiers de l'Assurance 2026",
     template: "%s — Forum des Métiers de l'Assurance",
@@ -25,8 +27,10 @@ export const instant = false;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" dir="ltr" className={`${inter.variable} ${display.variable} h-full`}>
-      <body className="min-h-full antialiased">{children}</body>
+    <html lang="fr" dir="ltr" className={`${inter.variable} ${display.variable} ${hero.variable} h-full`}>
+      <body className="min-h-full antialiased">
+        <PageTransition>{children}</PageTransition>
+      </body>
     </html>
   );
 }

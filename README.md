@@ -9,12 +9,19 @@ Les intervenants et partenaires livrés par le seed sont des contenus de démons
 ## Démarrage local
 
 1. Copier `.env.example` vers `.env` et changer les mots de passe.
-2. `docker compose up -d`
+2. `docker compose up -d` (MySQL est publié sur le port 3307 par défaut ; `MYSQL_PORT` permet de le changer).
 3. `npx prisma migrate dev` — l'utilisateur applicatif ne peut pas créer la base fantôme de Prisma. Si la commande échoue, lancez-la une fois avec `DATABASE_URL` pointant vers `root`, puis remettez l'utilisateur `forum`.
 4. `npm run db:seed`
 5. `npm run dev`
 
-Le site est sur http://localhost:3000 et le back-office sur http://localhost:3000/admin/login.
+Pour réinitialiser uniquement les contenus publics sans modifier les comptes :
+
+```powershell
+$env:SEED_CONTENT_ONLY = "true"
+npm run db:seed
+```
+
+Le site est sur http://localhost:8185 et le back-office sur http://localhost:8185/admin/login.
 
 Sans SMTP, l'inscription est quand même confirmée : le billet s'affiche à l'écran et le PDF se télécharge. Renseignez `SMTP_HOST` pour l'envoi.
 

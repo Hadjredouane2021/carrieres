@@ -29,6 +29,13 @@ export function vimeoId(url: string) {
   }
 }
 
+/** Lien cliquable : chemin interne ("/programme") ou adresse https. */
+export function safeLinkUrl(url: string) {
+  if (!url) return null;
+  if (url.startsWith("/") && !url.startsWith("//")) return url;
+  return safeAssetUrl(url);
+}
+
 export function safeAssetUrl(url: string) {
   if (!url) return null;
   if (url.startsWith("/uploads/") && !url.includes("..")) return url;

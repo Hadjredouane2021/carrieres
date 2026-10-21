@@ -16,6 +16,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+export const ICON_NAMES = ["briefcase", "calculator", "headset", "scale", "chart", "users", "laptop", "search", "sparkles", "compass", "handshake", "shield", "messages", "graduation"] as const;
+
 const icons: Record<string, LucideIcon> = {
   briefcase: Briefcase,
   calculator: Calculator,

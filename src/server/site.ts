@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { normalizeLayout } from "@/lib/home-layout";
 import { db } from "@/lib/prisma";
 import { fallbackSections, type SiteData } from "@/lib/site-types";
 
@@ -48,6 +49,8 @@ export async function getPublicSite(): Promise<SiteData> {
       capacity: settings?.capacity ?? 1500,
       confirmedCount,
       heroImage: settings?.heroImage ?? "",
+      homeLayout: normalizeLayout(settings?.homeLayout),
+      eventLink: { url: settings?.eventLinkUrl ?? "", label: pair(settings?.eventLinkLabelFr ?? "", settings?.eventLinkLabelAr ?? "") },
     },
     sections: sectionMap,
     why: why.map((item) => ({
