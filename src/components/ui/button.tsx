@@ -3,25 +3,31 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition disabled:pointer-events-none disabled:opacity-50",
+// Variantes partagées par les boutons et les liens d'action (via buttonVariants) du site public et du back-office.
+export const buttonVariants = cva(
+  "group/btn inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition duration-200 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        gold: "bg-gold text-night shadow-[0_10px_30px_rgba(216,181,122,0.28)] hover:bg-gold-bright",
-        night: "bg-night text-beige hover:bg-institution",
-        line: "border border-current bg-transparent hover:bg-white/10",
-        ghost: "bg-transparent hover:bg-night/5",
+        sun: "bg-sun text-night shadow-[0_18px_44px_-20px_rgba(255,122,26,0.95)] hover:bg-sun-bright",
+        night: "bg-night text-white hover:bg-institution",
+        light: "bg-white text-night hover:bg-dawn",
+        glass: "border border-white/20 bg-white/[0.06] text-white backdrop-blur hover:border-white/40 hover:bg-white/[0.12]",
+        outline: "border border-night/15 bg-white text-night hover:border-night/35",
+        ghost: "text-night hover:bg-night/[0.05]",
+        danger: "border border-red-200 bg-white text-red-700 hover:bg-red-50",
       },
       size: {
-        sm: "h-9 px-4",
-        md: "h-11 px-6",
-        lg: "h-12 px-7 text-base",
+        sm: "h-9 px-4 text-sm",
+        md: "h-11 px-5 text-sm",
+        lg: "h-14 px-7 text-base",
       },
     },
-    defaultVariants: { variant: "gold", size: "md" },
+    defaultVariants: { variant: "sun", size: "md" },
   },
 );
+
+export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
 export function Button({
   className,
@@ -29,7 +35,21 @@ export function Button({
   size,
   asChild = false,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & ButtonVariants & { asChild?: boolean }) {
   const Comp = asChild ? Slot : "button";
   return <Comp className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+}
+
+// Pastille fléchée des CTA principaux (« Je m'inscris → »).
+export function ArrowBadge({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "grid size-10 shrink-0 place-items-center rounded-full bg-night text-sun transition-transform motion-safe:group-hover/btn:translate-x-0.5 rtl:motion-safe:group-hover/btn:-translate-x-0.5",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
 }

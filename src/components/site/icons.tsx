@@ -37,3 +37,6 @@ export function Icon({ name, className }: { name: string; className?: string }) 
   const Cmp = icons[name] ?? Sparkles;
   return <Cmp className={className} aria-hidden="true" />;
 }
+
+// Clés proposées dans le back-office (champ « icône » des métiers et de « Pourquoi participer »).
+export const iconNames = Object.keys(icons);

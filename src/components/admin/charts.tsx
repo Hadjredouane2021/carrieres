@@ -11,7 +11,7 @@ export function DashboardCharts({
 }) {
   return (
     <div className="grid gap-4 xl:grid-cols-5">
-      <div className="h-80 rounded-3xl bg-white p-4 xl:col-span-3">
+      <div className="h-80 rounded-2xl bg-white p-5 ring-1 ring-night/[0.07] xl:col-span-3">
         <p className="mb-2 text-sm font-medium text-night">Inscriptions — 14 jours</p>
         <ResponsiveContainer width="100%" height="85%">
           <AreaChart data={days}>
@@ -19,11 +19,11 @@ export function DashboardCharts({
             <XAxis dataKey="day" tick={{ fontSize: 12 }} />
             <YAxis allowDecimals={false} width={32} />
             <Tooltip />
-            <Area dataKey="count" name="Inscriptions" stroke="#173D70" fill="#D8B57A" />
+            <Area dataKey="count" name="Inscriptions" stroke="#B4470C" fill="#FF7A1A" fillOpacity={0.18} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="h-80 rounded-3xl bg-white p-4 xl:col-span-2">
+      <div className="h-80 rounded-2xl bg-white p-5 ring-1 ring-night/[0.07] xl:col-span-2">
         <p className="mb-2 text-sm font-medium text-night">Profils</p>
         <ResponsiveContainer width="100%" height="85%">
           <BarChart data={types}>

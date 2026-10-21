@@ -1,4 +1,6 @@
 import { connection } from "next/server";
+import { AdminField, AdminHeader, BilingualFields, EditorLayout, FormTitle, ItemList, Panel, PublishedToggle } from "@/components/admin/kit";
+import { SubmitButton } from "@/components/admin/kit-client";
 import { Flash } from "@/components/admin/shell";
 import { db } from "@/lib/prisma";
 import { deleteFaq, saveFaq } from "@/server/actions/admin";
@@ -11,27 +13,58 @@ export default async function FaqAdminPage({ searchParams }: { searchParams: Pro
   const items = await db().faqItem.findMany({ orderBy: { sortOrder: "asc" } });
   const current = items.find((item) => item.id === query.id);
   return (
-    <div className="grid gap-5">
-      <h1 className="display text-4xl text-night">FAQ</h1>
+    <div className="grid gap-6">
+      <AdminHeader eyebrow="Site public" title="FAQ" description="Questions affichées sur la page FAQ, dans l'ordre indiqué. La version arabe est facultative." />
       <Flash error={query.error} ok={query.ok} />
-      <form action={saveFaq} className="grid gap-3 rounded-3xl bg-white p-5">
-        {current ? <input type="hidden" name="id" value={current.id} /> : null}
-        <input className="field" name="questionFr" defaultValue={current?.questionFr ?? ""} required />
-        <input className="field" name="questionAr" dir="rtl" defaultValue={current?.questionAr ?? ""} />
-        <textarea className="field" name="answerFr" defaultValue={current?.answerFr ?? ""} required />
-        <textarea className="field" name="answerAr" dir="rtl" defaultValue={current?.answerAr ?? ""} />
-        <input className="field" name="sortOrder" type="number" defaultValue={current?.sortOrder ?? items.length + 1} />
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={current?.published ?? true} /> Publié</label>
-        <button className="h-11 rounded-full bg-night text-beige">{current ? "Mettre à jour" : "Ajouter"}</button>
-      </form>
-      <ul className="grid gap-2">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-            <a href={`?id=${item.id}`}>{item.questionFr}</a>
-            <form action={deleteFaq}><input type="hidden" name="id" value={item.id} /><button className="text-sm text-red-700">Supprimer</button></form>
-          </li>
-        ))}
-      </ul>
+      <EditorLayout
+        form={
+          <Panel>
+            <FormTitle editing={current?.questionFr} noun="une question" />
+            <form key={current?.id ?? "new"} action={saveFaq} className="grid gap-4">
+              {current ? <input type="hidden" name="id" value={current.id} /> : null}
+              <BilingualFields
+                fr={
+                  <AdminField label="Question (français)">
+                    <input className="field" name="questionFr" defaultValue={current?.questionFr ?? ""} required />
+                  </AdminField>
+                }
+                ar={
+                  <AdminField label="Question (arabe)">
+                    <input className="field" name="questionAr" dir="rtl" defaultValue={current?.questionAr ?? ""} />
+                  </AdminField>
+                }
+              />
+              <BilingualFields
+                fr={
+                  <AdminField label="Réponse (français)">
+                    <textarea className="field min-h-32" name="answerFr" defaultValue={current?.answerFr ?? ""} required />
+                  </AdminField>
+                }
+                ar={
+                  <AdminField label="Réponse (arabe)">
+                    <textarea className="field min-h-32" name="answerAr" dir="rtl" defaultValue={current?.answerAr ?? ""} />
+                  </AdminField>
+                }
+              />
+              <div className="flex flex-wrap items-end gap-4">
+                <AdminField label="Ordre" className="w-32">
+                  <input className="field" name="sortOrder" type="number" defaultValue={current?.sortOrder ?? items.length + 1} />
+                </AdminField>
+                <PublishedToggle defaultChecked={current?.published ?? true} />
+              </div>
+              <SubmitButton className="w-fit">{current ? "Mettre à jour" : "Ajouter la question"}</SubmitButton>
+            </form>
+          </Panel>
+        }
+        list={
+          <ItemList
+            items={items.map((item) => ({ id: item.id, title: item.questionFr, meta: `Ordre ${item.sortOrder}`, published: item.published }))}
+            currentId={current?.id}
+            deleteAction={deleteFaq}
+            empty="Aucune question pour le moment."
+          />
+        }
+      />
     </div>
   );
 }

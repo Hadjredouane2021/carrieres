@@ -38,6 +38,13 @@ export type SiteData = {
   gallery: { id: string; type: "IMAGE" | "VIDEO"; url: string; caption: Localized }[];
 };
 
+// Notes destinées à l'équipe, présentes dans les textes déjà enregistrés : jamais affichées au public.
+const INTERNAL_NOTES = [/\s*Le détail reste modifiable depuis le back-office\.?/g, /\s*يمكن تعديل التفاصيل من لوحة التحكم\.?/g];
+
+export function publicCopy(value: string) {
+  return INTERNAL_NOTES.reduce((text, note) => text.replace(note, ""), value).trim();
+}
+
 export const fallbackSections: Record<string, SectionCopy> = {
   hero: {
     title: { fr: "Le Forum des Métiers de l'Assurance", ar: "منتدى مهن التأمين" },
@@ -67,8 +74,8 @@ export const fallbackSections: Record<string, SectionCopy> = {
   program: {
     title: { fr: "Le fil de la journée", ar: "مجرى اليوم" },
     body: {
-      fr: "Plénières, tables rondes et ateliers. Le détail reste modifiable depuis le back-office.",
-      ar: "جلسات عامة وموائد مستديرة وورشات. يمكن تعديل التفاصيل من لوحة التحكم.",
+      fr: "Plénières, tables rondes et ateliers.",
+      ar: "جلسات عامة وموائد مستديرة وورشات.",
     },
   },
   speakers: {

@@ -8,8 +8,16 @@
   --beige: #f3e9dc;
   --mist: #eef2f7;
   --ink: #122033;
-  --background: #f3e9dc;
+  --background: #ffffff;
   --foreground: #122033;
+  /* Lever de soleil sur Casablanca : bleu nuit, orange solaire et blanc. */
+  --sun: #ff7a1a;
+  --sun-bright: #ffa24c;
+  --sun-ink: #b4470c;
+  --dawn: #fff4ea;
+  --night-deep: #071226;
+  --muted: #5a6b85;
+  --haze: #9fb0c8;
 }
 
 @theme inline {
@@ -22,6 +30,13 @@
   --color-ink: var(--ink);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-sun: var(--sun);
+  --color-sun-bright: var(--sun-bright);
+  --color-sun-ink: var(--sun-ink);
+  --color-dawn: var(--dawn);
+  --color-night-deep: var(--night-deep);
+  --color-muted: var(--muted);
+  --color-haze: var(--haze);
   --font-sans: var(--font-inter);
   --font-display: var(--font-display);
   --font-accent: var(--font-instrument);
@@ -32,6 +47,49 @@
   --animate-reveal: reveal 1s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-kenburns: kenburns 2.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-grow: grow 1.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.2s ease-out both;
+  --animate-dialog-in: dialog-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-accordion-down: accordion-down 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-accordion-up: accordion-up 0.22s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(0.98);
+    }
+  }
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
 
   @keyframes rise {
     from {
@@ -93,22 +151,29 @@
 
 html {
   scroll-behavior: smooth;
+  /* Ancres et champs mis au point restent visibles sous le header fixe. */
+  scroll-padding-top: 6.5rem;
 }
 
 body {
-  background: var(--beige);
+  background: var(--background);
   color: var(--ink);
   font-family: var(--font-inter), sans-serif;
 }
 
 ::selection {
-  background: #d8b57a;
-  color: #0b1b3a;
+  background: var(--sun-bright);
+  color: var(--night);
 }
 
+/* Focus : orange foncé sur fond clair, orange vif sur les surfaces nuit (contraste ≥ 3:1 dans les deux cas). */
 :focus-visible {
-  outline: 2px solid #d8b57a;
+  outline: 2px solid var(--sun-ink);
   outline-offset: 3px;
+}
+
+.surface-dark :focus-visible {
+  outline-color: var(--sun-bright);
 }
 
 .display {
@@ -135,6 +200,20 @@ body {
   color: transparent;
 }
 
+/* Grand mot en filigrane des en-têtes de page. */
+.text-outline {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.09);
+}
+
+.text-sun-sheen {
+  background-image: linear-gradient(100deg, #ff7a1a 0%, #ffb062 32%, #ff8a2e 52%, #ffc48a 72%, #ff7a1a 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .field {
   width: 100%;
   border-radius: 0.9rem;
@@ -146,8 +225,8 @@ body {
 }
 
 .field:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
+  border-color: var(--night);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sun) 28%, transparent);
 }
 
 /* Champ du parcours d'inscription. */
@@ -170,14 +249,19 @@ body {
 }
 
 .lux-field:focus {
-  border-color: var(--gold);
+  border-color: var(--sun);
   background: white;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 24%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sun) 20%, transparent);
 }
 
+.lux-field::placeholder {
+  color: color-mix(in srgb, var(--muted) 80%, white);
+}
+
+/* Erreur signalée par la bordure et le message, sans aplat rouge. */
 [data-invalid] .lux-field {
-  border-color: #b91c1c;
-  background: #fef6f6;
+  border-color: color-mix(in srgb, #dc2626 70%, white);
+  background: white;
 }
 
 textarea.lux-field {
@@ -211,6 +295,24 @@ select.lux-field {
     radial-gradient(circle var(--notch) at 100% calc(100% - var(--stub)), #0000 98%, #000) right / 51% 100% no-repeat;
 }
 
+/* Apparition au défilement : amélioration progressive, sans JavaScript ; le contenu reste visible ailleurs. */
+@keyframes scroll-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .scroll-reveal {
+      animation: scroll-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -221,5 +323,19 @@ select.lux-field {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Impression du billet : couleurs conservées, mise en page sur une page. */
+@media print {
+  .ticket-print,
+  .ticket-print * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .ticket-print {
+    box-shadow: none;
+    break-inside: avoid;
   }
 }
