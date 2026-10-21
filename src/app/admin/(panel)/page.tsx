@@ -3,9 +3,7 @@ import { connection } from "next/server";
 import { DashboardCharts } from "@/components/admin/charts";
 import { Flash } from "@/components/admin/shell";
 import { labelOf, PARTICIPANT_TYPES } from "@/lib/constants";
-import { safeAssetUrl } from "@/lib/media";
 import { db } from "@/lib/prisma";
-import { saveHeroImage } from "@/server/actions/admin";
 import { requireUser } from "@/server/session";
 
 export const instant = false;
@@ -13,11 +11,11 @@ export const instant = false;
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string }> }) {
   await connection();
   const query = await searchParams;
-  const session = await requireUser(false);
+  await requireUser(false);
   const since = new Date();
   since.setUTCDate(since.getUTCDate() - 13);
   since.setUTCHours(0, 0, 0, 0);
-  const [total, confirmed, present, cancelled, grouped, recent, created, settings] = await Promise.all([
+  const [total, confirmed, present, cancelled, grouped, recent, created] = await Promise.all([
     db().registration.count(),
     db().registration.count({ where: { status: "CONFIRMED" } }),
     db().registration.count({ where: { status: "CHECKED_IN" } }),
@@ -25,9 +23,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     db().registration.groupBy({ by: ["participantType"], _count: { _all: true } }),
     db().registration.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
     db().registration.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
-    db().eventSettings.findUnique({ where: { id: "main" } }),
   ]);
-  const heroImage = safeAssetUrl(settings?.heroImage ?? "");
   const days = Array.from({ length: 14 }, (_, index) => {
     const date = new Date(since);
     date.setUTCDate(since.getUTCDate() + index);
@@ -45,27 +41,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <p className="text-institution">Vue d'ensemble de l'édition 2026.</p>
       </div>
       <Flash error={query.error} ok={query.ok} />
-      {session.user.role === "ADMIN" ? (
-        <section className="rounded-3xl bg-white p-5">
-          <h2 className="text-lg text-night">Photo du hero</h2>
-          <p className="mt-1 text-sm text-institution">JPG, PNG ou WebP, 16 Mo maximum. L'image est recadrée en pleine largeur, sans être étirée. Un voile bleu nuit garde le titre lisible.</p>
-          {heroImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={heroImage} alt="Aperçu du hero" className="mt-4 h-40 w-full rounded-2xl object-cover" />
-          ) : (
-            <p className="mt-4 rounded-2xl bg-mist px-4 py-6 text-sm text-institution">Illustration par défaut, tant qu'aucune photo n'est déposée.</p>
-          )}
-          <form action={saveHeroImage} className="mt-4 grid gap-3">
-            <input className="field" type="file" name="file" accept="image/jpeg,image/png,image/webp" />
-            {heroImage ? (
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="remove" /> Revenir à l'illustration
-              </label>
-            ) : null}
-            <button className="h-11 w-fit rounded-full bg-night px-6 text-beige">Mettre à jour la photo</button>
-          </form>
-        </section>
-      ) : null}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["Inscriptions", total],

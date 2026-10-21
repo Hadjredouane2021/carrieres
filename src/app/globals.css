@@ -24,6 +24,71 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-display: var(--font-display);
+  --font-accent: var(--font-instrument);
+  --animate-marquee: marquee 48s linear infinite;
+  --animate-aurora: aurora 22s ease-in-out infinite alternate;
+  --animate-shimmer: shimmer 7s ease-in-out infinite;
+  --animate-rise: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-reveal: reveal 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-kenburns: kenburns 2.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-grow: grow 1.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+      filter: blur(10px);
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      transform: translateY(110%);
+    }
+  }
+
+  @keyframes kenburns {
+    from {
+      transform: scale(1.12);
+    }
+    to {
+      transform: scale(1.02);
+    }
+  }
+
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes aurora {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(4%, -3%, 0) scale(1.08);
+    }
+    100% {
+      transform: translate3d(-3%, 2%, 0) scale(0.96);
+    }
+  }
+
+  @keyframes shimmer {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
 }
 
 html {
@@ -56,6 +121,20 @@ body {
   background-size: 3px 3px;
 }
 
+/* Grain photographique du Hero. */
+.noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.text-gold-sheen {
+  background-image: linear-gradient(100deg, #c9a063 0%, #f6e3bd 32%, #d8b57a 52%, #fff4dc 72%, #c9a063 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .field {
   width: 100%;
   border-radius: 0.9rem;
@@ -69,6 +148,67 @@ body {
 .field:focus {
   border-color: var(--gold);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+/* Champ du parcours d'inscription. */
+.lux-field {
+  width: 100%;
+  height: 3.25rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--night) 12%, transparent);
+  background: color-mix(in srgb, var(--mist) 60%, white);
+  padding: 0 1rem;
+  color: var(--ink);
+  /* 16 px minimum : évite le zoom automatique d'iOS au focus. */
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.lux-field:hover {
+  border-color: color-mix(in srgb, var(--night) 24%, transparent);
+}
+
+.lux-field:focus {
+  border-color: var(--gold);
+  background: white;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 24%, transparent);
+}
+
+[data-invalid] .lux-field {
+  border-color: #b91c1c;
+  background: #fef6f6;
+}
+
+textarea.lux-field {
+  height: auto;
+  min-height: 7.5rem;
+  padding: 0.85rem 1rem;
+  resize: vertical;
+}
+
+select.lux-field {
+  appearance: none;
+  padding-inline-end: 2.75rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23173d70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+[dir="rtl"] select.lux-field {
+  background-position: left 1rem center;
+}
+
+/* Billet : encoches latérales au-dessus du talon. */
+.ticket-notch {
+  --notch: 0.8rem;
+  --stub: 8.5rem;
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at 0 calc(100% - var(--stub)), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% calc(100% - var(--stub)), #0000 98%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at 0 calc(100% - var(--stub)), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch) at 100% calc(100% - var(--stub)), #0000 98%, #000) right / 51% 100% no-repeat;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,6 +1,7 @@
 import { Hero } from "@/components/site/hero";
 import { PublicFrame } from "@/components/site/public-frame";
 import { About, Careers, ContactBand, Cta, Faq, Gallery, Partners, Program, Speakers, Why } from "@/components/site/sections";
+import { eventDateParts } from "@/lib/datetime";
 import { tx } from "@/lib/i18n";
 import { getLocale } from "@/server/session";
 import { getPublicSite } from "@/server/site";
@@ -29,7 +30,7 @@ export default async function HomePage() {
   return (
     <PublicFrame locale={locale} site={site}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <Hero site={site} locale={locale} />
+      <Hero site={site} locale={locale} when={eventDateParts(site.settings.eventDate, locale)} />
       <About site={site} locale={locale} />
       <Why site={site} locale={locale} />
       <Careers site={site} locale={locale} />

@@ -96,14 +96,14 @@ export async function saveHeroImage(formData: FormData) {
     try {
       heroImage = await savePublicImage(file, 16 * 1024 * 1024);
     } catch (error) {
-      done("/admin", error instanceof Error ? error.message : "Image refusée.");
+      done("/admin/hero", error instanceof Error ? error.message : "Image refusée.");
     }
   } else if (!remove) {
-    done("/admin", "Choisissez une image JPG, PNG ou WebP.");
+    done("/admin/hero", "Choisissez une image JPG, PNG ou WebP.");
   }
   await db().eventSettings.update({ where: { id: "main" }, data: { heroImage } });
   refreshSite();
-  done("/admin");
+  done("/admin/hero");
 }
 
 export async function saveSection(formData: FormData) {

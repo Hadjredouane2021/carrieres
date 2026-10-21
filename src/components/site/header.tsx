@@ -23,20 +23,39 @@ export function Header({ locale }: { locale: Locale }) {
   const copy = dictionary[locale];
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const reduce = useReducedMotion();
+  // Transparent uniquement au-dessus du Hero de l'accueil : les autres pages débutent sur fond clair.
+  const solid = scrolled || open || pathname !== "/";
 
   useEffect(() => {
     setOpen(false);
   }, [pathname, locale]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition",
-        "border-b border-white/10 bg-night/80 shadow-[0_10px_40px_rgba(11,27,58,0.12)] backdrop-blur-xl",
-      )}
-    >
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
+    <header className="fixed inset-x-0 top-0 z-50">
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-0 border-b border-white/10 bg-night/80 shadow-[0_10px_40px_rgba(11,27,58,0.12)] backdrop-blur-xl transition-opacity duration-500",
+          solid ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-night/70 to-transparent transition-opacity duration-500",
+          solid ? "opacity-0" : "opacity-100",
+        )}
+      />
+      <div className="relative mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
         <Link href="/" className="rounded-xl bg-white px-2.5 py-1.5">
           <img src="/logo-fma.png" alt="Assur' Carrière" className="h-10 w-auto sm:h-12" />
         </Link>
@@ -75,7 +94,7 @@ export function Header({ locale }: { locale: Locale }) {
             initial={reduce ? false : { height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={reduce ? undefined : { height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-white/10 bg-night xl:hidden"
+            className="relative overflow-hidden border-t border-white/10 bg-night xl:hidden"
             aria-label="Mobile"
           >
             <div className="grid gap-1 px-4 py-4">
