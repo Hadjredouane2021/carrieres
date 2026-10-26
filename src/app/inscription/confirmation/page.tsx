@@ -55,7 +55,7 @@ export default async function ConfirmationPage({ searchParams }: { searchParams:
             <span className="size-2 rounded-full bg-emerald-400" aria-hidden="true" />
             Inscription confirmée · {row.reference}
           </span>
-          <h1 className="display mt-6 text-[clamp(2.6rem,7vw,5.4rem)] leading-[0.94] text-balance motion-safe:animate-rise [animation-delay:0.08s]">
+          <h1 className="display mt-6 text-[clamp(2.3rem,5.4vw,4.4rem)] leading-[0.97] text-balance motion-safe:animate-rise [animation-delay:0.08s]">
             C&apos;est confirmé, <span className="text-sun-sheen">{row.firstName}</span> !
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-haze motion-safe:animate-rise [animation-delay:0.16s] sm:text-lg">

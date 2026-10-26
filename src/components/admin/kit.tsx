@@ -1,5 +1,5 @@
 import { Pencil, X } from "lucide-react";
-import { DeleteForm } from "@/components/admin/kit-client";
+import { DeleteForm, PublishedSwitch } from "@/components/admin/kit-client";
 import { cn } from "@/lib/utils";
 
 // Composants d'écran du back-office : plus sobres que le site public, mêmes couleurs et mêmes rayons.
@@ -77,12 +77,7 @@ export function AdminField({
 }
 
 export function PublishedToggle({ defaultChecked }: { defaultChecked: boolean }) {
-  return (
-    <label className="flex w-fit cursor-pointer items-center gap-3 rounded-xl border border-night/10 px-3 py-2.5 text-sm text-night has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50">
-      <input type="checkbox" name="published" defaultChecked={defaultChecked} className="size-4 accent-[#0b1b3a]" />
-      Publié sur le site
-    </label>
-  );
+  return <PublishedSwitch defaultChecked={defaultChecked} />;
 }
 
 export function StatusBadge({ published }: { published: boolean }) {
@@ -181,10 +176,63 @@ export function BilingualFields({
   fr: React.ReactNode;
   ar: React.ReactNode;
 }) {
+  // Le back-office n'affiche que le français : les champs arabes restent dans le formulaire, cachés,
+  // pour renvoyer tels quels les textes déjà traduits au lieu de les effacer.
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4">
       {fr}
-      {ar}
+      <div hidden>{ar}</div>
+    </div>
+  );
+}
+
+export type Stat = { label: string; value: string; hint?: string; icon: React.ComponentType<{ className?: string }>; alert?: boolean };
+
+// Rangée d'indicateurs en tête des écrans du back-office.
+export function StatGrid({ stats }: { stats: Stat[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      {stats.map(({ label, value, hint, icon: StatIcon, alert }) => (
+        <article key={label} className={cn("rounded-2xl bg-white p-4 ring-1 ring-night/[0.07]", alert && "bg-amber-50 ring-amber-200")}>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-medium text-muted">{label}</p>
+            <span className={cn("grid size-8 place-items-center rounded-xl", alert ? "bg-amber-100 text-amber-700" : "bg-dawn text-sun-ink")}>
+              <StatIcon className="size-4" aria-hidden="true" />
+            </span>
+          </div>
+          <p className="display mt-2 truncate text-2xl text-night tabular-nums md:text-3xl">{value}</p>
+          {hint ? <p className={cn("mt-0.5 truncate text-xs", alert ? "text-amber-800" : "text-muted")}>{hint}</p> : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export function EmptyBlock({ icon: EmptyIcon, title, text }: { icon: React.ComponentType<{ className?: string }>; title: string; text: string }) {
+  return (
+    <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-night/15 bg-white px-6 py-14 text-center">
+      <span className="grid size-12 place-items-center rounded-2xl bg-dawn text-sun-ink">
+        <EmptyIcon className="size-5" aria-hidden="true" />
+      </span>
+      <p className="font-medium text-night">{title}</p>
+      <p className="max-w-sm text-sm text-muted">{text}</p>
+    </div>
+  );
+}
+
+// En-tête de l'éditeur latéral : création ou modification, avec retour à la création.
+export function EditorHead({ editing, kicker, title, cancelHref }: { editing: boolean; kicker: string; title: string; cancelHref: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-night/[0.07] px-5 py-4 md:px-6">
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sun-ink">{editing ? "Modification" : kicker}</p>
+        <h2 className="display mt-1 truncate text-xl text-night">{title}</h2>
+      </div>
+      {editing ? (
+        <a href={cancelHref} aria-label="Annuler la modification" className="grid size-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-mist hover:text-night">
+          <X className="size-4" aria-hidden="true" />
+        </a>
+      ) : null}
     </div>
   );
 }

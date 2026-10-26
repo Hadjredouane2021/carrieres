@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   STAFF
 }
@@ -67,10 +68,17 @@ model EventSettings {
   facebook         String    @default("")
   linkedin         String    @default("")
   instagram        String    @default("")
-  youtube          String    @default("")
+  tiktok           String    @default("")
   registrationOpen Boolean   @default(true)
   capacity         Int       @default(1500)
   heroImage        String    @default("") @db.VarChar(500)
+  heroMedia        String    @default("video") @db.VarChar(10)
+  ribbonItems      String    @default("") @db.Text
+  heroMarquee      String    @default("") @db.Text
+  menuItems        String    @default("") @db.Text
+  credits          String    @default("") @db.Text
+  educationLevels  String    @default("") @db.Text
+  theme            String    @default("") @db.Text
   updatedAt        DateTime  @updatedAt
 
   @@map("event_settings")
@@ -107,6 +115,7 @@ model Career {
   summaryFr  String  @db.Text
   summaryAr  String  @db.Text
   icon       String  @default("briefcase")
+  category   String  @default("") @db.VarChar(40)
   sortOrder  Int     @default(0)
   published  Boolean @default(true)
 

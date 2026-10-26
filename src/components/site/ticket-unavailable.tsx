@@ -14,7 +14,7 @@ export function TicketUnavailable() {
         <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-white/[0.07] text-sun">
           <TicketX className="size-8" aria-hidden="true" />
         </span>
-        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-sun">Billet indisponible</p>
+        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.28em] text-sun">Billet indisponible</p>
         <h1 className="display mt-3 text-[clamp(2.2rem,6vw,3.6rem)] leading-[0.98] text-balance">Ce billet est introuvable ou n&apos;est plus valide.</h1>
         <p className="mt-5 text-haze">
           Vérifie que le lien a été copié en entier depuis l&apos;e-mail de confirmation. Si ton inscription a été annulée ou si le lien ne fonctionne

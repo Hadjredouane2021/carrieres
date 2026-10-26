@@ -47,9 +47,11 @@ const framing = "object-cover object-[62%_50%] md:object-center";
 // Le poster s'affiche tout de suite (image légère, prioritaire pour le LCP). La vidéo ne se charge qu'une fois le Hero
 // à l'écran, jamais en mouvement réduit ni en mode économie de données, puis apparaît en fondu au-dessus du poster.
 // Mémoïsé : le compte à rebours re-rend le Hero chaque seconde.
-const HeroVideo = memo(function HeroVideo({ reduce, poster, onPosterError }: { reduce: boolean; poster: string; onPosterError: () => void }) {
+const HeroVideo = memo(function HeroVideo({ reduce, poster, still, onPosterError }: { reduce: boolean; poster: string; still: boolean; onPosterError: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
+  // Fichier illisible ou décodage interrompu : on garde le poster plutôt qu'une image figée.
+  const [failed, setFailed] = useState(false);
 
   // Un poster déjà en échec avant l'hydratation ne déclenche plus onError.
   const watchPoster = useCallback(
@@ -64,7 +66,7 @@ const HeroVideo = memo(function HeroVideo({ reduce, poster, onPosterError }: { r
     if (!node) return;
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
     // autoplay est posé ici plutôt que dans le HTML serveur, rendu avant de connaître la préférence de mouvement.
-    if (reduce || saveData) {
+    if (still || reduce || saveData) {
       node.autoplay = false;
       node.pause();
       return;
@@ -84,7 +86,7 @@ const HeroVideo = memo(function HeroVideo({ reduce, poster, onPosterError }: { r
       observer.disconnect();
       node.pause();
     };
-  }, [reduce]);
+  }, [reduce, still]);
 
   return (
     <>
@@ -97,6 +99,7 @@ const HeroVideo = memo(function HeroVideo({ reduce, poster, onPosterError }: { r
         onError={onPosterError}
         className={cn("absolute inset-0 h-full w-full", framing)}
       />
+      {still ? null : (
       <video
         ref={video}
         muted
@@ -107,11 +110,14 @@ const HeroVideo = memo(function HeroVideo({ reduce, poster, onPosterError }: { r
         aria-hidden="true"
         tabIndex={-1}
         onPlaying={() => setPlaying(true)}
-        className={cn("absolute inset-0 h-full w-full transition-opacity duration-1000", framing, playing && !reduce ? "opacity-100" : "opacity-0")}
+        onError={() => setFailed(true)}
+        className={cn("absolute inset-0 h-full w-full transition-opacity duration-1000", framing, playing && !failed && !reduce ? "opacity-100" : "opacity-0")}
       >
-        <source src={VIDEO.webm} type="video/webm" />
+        {/* MP4 d'abord : le WebM actuel provoque une erreur de décodage dans Chrome et Firefox. */}
         <source src={VIDEO.mp4} type="video/mp4" />
+        <source src={VIDEO.webm} type="video/webm" onError={() => setFailed(true)} />
       </video>
+      )}
     </>
   );
 });
@@ -126,6 +132,8 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
   const countdown = useCountdown(settings.eventDate);
   const title = tx(locale, site.sections.hero?.title.fr ?? copy.title, site.sections.hero?.title.ar ?? copy.title);
   const slogan = tx(locale, settings.slogan.fr, settings.slogan.ar);
+  // Phrase d'accroche : champ « Texte » du Hero (back-office, Textes du site), sinon la phrase par défaut.
+  const lead = tx(locale, site.sections.hero?.body.fr ?? "", site.sections.hero?.body.ar ?? "").trim() || copy.lead;
   const photo = safeAssetUrl(settings.heroImage);
   const [photoFailed, setPhotoFailed] = useState(false);
   const [posterFailed, setPosterFailed] = useState(false);
@@ -136,7 +144,8 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
   const seats = Math.max(settings.capacity - settings.confirmedCount, 0);
   const fill = settings.capacity > 0 ? Math.min(Math.max(settings.confirmedCount / settings.capacity, 0.03), 1) : 0;
   const status = !settings.registrationOpen ? "closed" : seats === 0 ? "full" : "open";
-  const careers = site.careers.map((career) => tx(locale, career.title.fr, career.title.ar));
+  // Bandeau du bas : mentions saisies dans Paramètres, sinon les métiers publiés.
+  const careers = locale === "fr" && settings.heroMarquee.length ? settings.heroMarquee : site.careers.map((career) => tx(locale, career.title.fr, career.title.ar));
   const numbers = locale === "ar" ? "ar-MA" : "fr-MA";
   const words = title.split(/\s+/).filter(Boolean);
 
@@ -164,11 +173,11 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
     <section
       ref={ref}
       onPointerMove={spotlight}
-      className="group/hero relative isolate flex min-h-[100svh] flex-col overflow-hidden rounded-b-[2rem] bg-night text-white md:rounded-b-[2.75rem]"
+      className="group/hero relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-night text-white"
     >
       {!posterFailed ? (
         <motion.div style={{ y: reduce ? 0 : photoY }} className="absolute inset-0">
-          <HeroVideo reduce={Boolean(reduce)} poster={customPoster ?? VIDEO.poster} onPosterError={onPosterError} />
+          <HeroVideo reduce={Boolean(reduce)} still={settings.heroMedia === "image"} poster={customPoster ?? VIDEO.poster} onPosterError={onPosterError} />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/45 to-night/15" />
           <div className="absolute inset-0 bg-gradient-to-r from-night/70 via-night/20 to-transparent rtl:bg-gradient-to-l" />
           <div className="absolute inset-0 bg-night/10 md:hidden" />
@@ -179,7 +188,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
       <div className="noise pointer-events-none absolute inset-0 opacity-[0.12]" />
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover/hero:opacity-100"
-        style={{ background: "radial-gradient(560px circle at var(--spot-x, 50%) var(--spot-y, 30%), rgba(255,122,26,0.12), transparent 62%)" }}
+        style={{ background: "radial-gradient(560px circle at var(--spot-x, 50%) var(--spot-y, 30%), color-mix(in srgb, var(--sun) 12%, transparent), transparent 62%)" }}
       />
 
       <motion.div
@@ -194,13 +203,13 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
             </span>
             {copy[status]}
           </span>
-          <span className="flex items-center gap-3 text-[11px] uppercase tracking-[0.32em] text-beige/70">
+          <span className="flex items-center gap-3 text-xs uppercase tracking-[0.32em] text-beige/70">
             <span className="h-px w-8 bg-sun/80" />
             {copy.kicker}
           </span>
         </div>
 
-        <h1 className="display mt-7 max-w-6xl text-[clamp(2.7rem,6.6vw,6.6rem)] leading-[0.92] text-balance md:mt-9">
+        <h1 className="display mt-7 max-w-6xl text-[clamp(2.4rem,5.4vw,5.2rem)] leading-[0.95] text-balance md:mt-9">
           {words.map((word, index) => (
             <Fragment key={`${word}-${index}`}>
               <span className="-mb-[0.14em] inline-block overflow-hidden pb-[0.14em] align-bottom">
@@ -216,7 +225,7 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
               <span
                 className={cn(
                   "text-sun-sheen inline-block animate-shimmer pe-[0.12em]",
-                  locale === "ar" ? "display" : "font-accent text-[1.08em] italic tracking-[-0.01em]",
+                  locale === "ar" ? "display" : "font-accent text-[0.78em] italic tracking-[-0.01em]",
                 )}
               >
                 {slogan}
@@ -226,11 +235,11 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
         </h1>
 
         <div className="mt-8 flex flex-col gap-6 motion-safe:animate-rise md:mt-10 lg:flex-row lg:items-end lg:justify-between" style={delay(0.75)}>
-          <p className="max-w-lg text-base leading-7 text-beige/80 md:text-lg md:leading-8">{copy.lead}</p>
+          <p className="max-w-lg whitespace-pre-line text-base leading-7 text-beige/80 md:text-lg md:leading-8">{lead}</p>
           <div className="flex shrink-0 flex-col gap-3 whitespace-nowrap sm:flex-row">
             <Link
               href="/inscription"
-              className="group/cta relative inline-flex h-14 items-center justify-between gap-4 overflow-hidden rounded-full bg-sun pe-2 ps-7 font-semibold text-night shadow-[0_18px_50px_-18px_rgba(255,122,26,0.85)] transition hover:bg-sun-bright"
+              className="group/cta relative inline-flex h-14 items-center justify-between gap-4 overflow-hidden rounded-full bg-sun pe-2 ps-7 font-semibold text-night shadow-[0_18px_50px_-18px_color-mix(in_srgb,var(--sun)_85%,transparent)] transition hover:bg-sun-bright"
             >
               <span className="pointer-events-none absolute inset-y-0 start-0 w-1/3 -translate-x-[160%] -skew-x-12 bg-white/45 blur-md transition-transform duration-700 group-hover/cta:translate-x-[420%]" />
               <span className="relative">{copy.participate}</span>
@@ -247,73 +256,72 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
           </div>
         </div>
 
+        {/* Fiche pratique compacte, en bas à gauche : date, lieu, compte à rebours et places. */}
         <dl
-          className="relative mt-10 grid grid-cols-2 overflow-hidden rounded-[1.75rem] border border-white/12 bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_40px_100px_-30px_rgba(3,8,20,0.8)] backdrop-blur-2xl motion-safe:animate-rise md:mt-12 lg:flex"
+          className="relative mt-10 grid w-full max-w-[34rem] grid-cols-2 overflow-hidden rounded-3xl border border-white/12 bg-night/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_30px_80px_-30px_rgba(3,8,20,0.8)] backdrop-blur-2xl motion-safe:animate-rise md:mt-12"
           style={delay(0.9)}
         >
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-sun/60 to-transparent" />
-          <Cell label={copy.when} className="lg:flex-1">
-            <dd className="display text-xl leading-tight md:text-2xl">{when?.day ?? copy.date}</dd>
+          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-sun/60 to-transparent" />
+          <Cell label={copy.when}>
+            <dd className="display text-base leading-tight md:text-lg">{when?.day ?? copy.date}</dd>
             {when ? (
-              <dd className="mt-1 text-sm text-beige/60">
+              <dd className="mt-0.5 text-xs text-beige/60">
                 <span className="capitalize">{when.weekday}</span> · {when.time}
               </dd>
             ) : null}
           </Cell>
-          <Cell label={copy.where} className="border-s border-white/10 lg:flex-1">
-            <dd className="display text-xl leading-tight md:text-2xl">{place}</dd>
-            <dd className="mt-1 truncate text-sm text-beige/60" title={settings.address || undefined}>
-              {settings.address || copy.country}
-            </dd>
+          <Cell label={copy.where} className="border-s border-white/10">
+            <dd className="display text-base leading-tight md:text-lg">{place}</dd>
+            {settings.address ? (
+              <dd className="mt-0.5 line-clamp-2 text-xs leading-snug text-beige/65" title={settings.address}>
+                {settings.address}
+              </dd>
+            ) : null}
           </Cell>
-          {settings.eventDate ? (
-            <Cell label={copy.startsIn} className="col-span-2 border-t border-white/10 md:col-span-1 lg:flex-[1.5] lg:border-s lg:border-t-0">
-              {countdown?.done ? (
-                <dd className="display text-xl text-sun md:text-2xl">{copy.started}</dd>
-              ) : (
-                <dd className="flex items-start gap-2.5 sm:gap-3.5" role="timer">
-                  {units.map(([label, value], index) => (
-                    <Fragment key={label}>
-                      {index ? <span className="display text-2xl leading-none text-white/25 md:text-3xl">:</span> : null}
-                      <span className="text-center">
-                        <span className="display block text-[1.7rem] leading-none tabular-nums md:text-3xl">
-                          <Digit value={value} reduce={Boolean(reduce)} />
+          <div className="col-span-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-white/10 px-4 py-3.5 md:px-5">
+            {settings.eventDate ? (
+              <div className="min-w-0">
+                <dt className="sr-only">{copy.startsIn}</dt>
+                {countdown?.done ? (
+                  <dd className="display text-base text-sun">{copy.started}</dd>
+                ) : (
+                  <dd className="flex items-start gap-2" role="timer">
+                    {units.map(([label, value], index) => (
+                      <Fragment key={label}>
+                        {index ? <span className="display text-lg leading-none text-white/25">:</span> : null}
+                        <span className="text-center">
+                          <span className="display block text-xl leading-none tabular-nums">
+                            <Digit value={value} reduce={Boolean(reduce)} />
+                          </span>
+                          <span className="mt-1 block text-[10px] uppercase tracking-[0.16em] text-beige/55">{label}</span>
                         </span>
-                        <span className="mt-2 block text-[9px] uppercase tracking-[0.18em] text-beige/55">{label}</span>
-                      </span>
-                    </Fragment>
-                  ))}
-                </dd>
-              )}
-            </Cell>
-          ) : null}
-          <Cell
-            label={copy.seats}
-            className={cn(
-              "col-span-2 border-t border-white/10 lg:flex-[1.15] lg:border-s lg:border-t-0",
-              settings.eventDate && "md:col-span-1 md:border-s",
-            )}
-          >
-            <dd className="flex items-baseline gap-2">
-              <span className="display text-xl leading-tight tabular-nums md:text-2xl">{seats.toLocaleString(numbers)}</span>
-              <span className="text-sm text-beige/60">
+                      </Fragment>
+                    ))}
+                  </dd>
+                )}
+              </div>
+            ) : null}
+            <div className="min-w-[8.5rem]">
+              <dt className="sr-only">{copy.seats}</dt>
+              <dd className="flex items-baseline gap-1.5 text-xs text-beige/65">
+                <span className="display text-lg leading-none tabular-nums text-white">{seats.toLocaleString(numbers)}</span>
                 {copy.seatsOf} {settings.capacity.toLocaleString(numbers)}
-              </span>
-            </dd>
-            <dd className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
-              <span
-                className="block h-full origin-left rounded-full bg-gradient-to-r from-sun to-sun-bright motion-safe:animate-grow rtl:origin-right rtl:bg-gradient-to-l"
-                style={{ width: `${fill * 100}%`, ...delay(1.2) }}
-              />
-            </dd>
-          </Cell>
+              </dd>
+              <dd className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+                <span
+                  className="block h-full origin-left rounded-full bg-gradient-to-r from-sun to-sun-bright motion-safe:animate-grow rtl:origin-right rtl:bg-gradient-to-l"
+                  style={{ width: `${fill * 100}%`, ...delay(1.2) }}
+                />
+              </dd>
+            </div>
+          </div>
         </dl>
       </motion.div>
 
       {careers.length ? (
         <div className="relative z-10 border-t border-white/10 bg-night/30 backdrop-blur-md motion-safe:animate-rise" style={delay(1.1)} dir="ltr">
           <div className="flex overflow-hidden py-4 [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
-            <div className="flex w-max animate-marquee hover:[animation-play-state:paused]">
+            <div className="ribbon-marquee flex w-max animate-marquee [animation-duration:45s] hover:[animation-play-state:paused]">
               {[0, 1].map((round) => (
                 <ul key={round} aria-hidden={round === 1 || undefined} className="flex shrink-0 items-center gap-8 pe-8">
                   {careers.map((career, index) => (
@@ -334,8 +342,8 @@ export function Hero({ site, locale, when }: { site: SiteData; locale: Locale; w
 
 function Cell({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("min-w-0 px-5 py-5 md:px-7 md:py-6", className)}>
-      <dt className="mb-2.5 text-[10px] font-medium uppercase tracking-[0.26em] text-sun">{label}</dt>
+    <div className={cn("min-w-0 px-4 py-3.5 md:px-5 md:py-4", className)}>
+      <dt className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-sun">{label}</dt>
       {children}
     </div>
   );

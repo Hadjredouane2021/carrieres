@@ -1,6 +1,7 @@
 import { ArrowUpRight, HelpCircle, Mail, MapPin, Phone } from "lucide-react";
 import { ContactForm } from "@/components/forms/contact-form";
 import { PageIntro, PublicFrame } from "@/components/site/public-frame";
+import { SocialIcon } from "@/components/site/social-icon";
 import { Container, TextLink } from "@/components/site/ui";
 import { tx } from "@/lib/i18n";
 import { placeLabel } from "@/lib/utils";
@@ -18,7 +19,7 @@ export default async function ContactPage() {
     [settings.linkedin, "LinkedIn"],
     [settings.instagram, "Instagram"],
     [settings.facebook, "Facebook"],
-    [settings.youtube, "YouTube"],
+    [settings.tiktok, "TikTok"],
   ].filter(([href]) => href.startsWith("https://"));
 
   return (
@@ -29,7 +30,7 @@ export default async function ContactPage() {
         <aside className="grid content-start gap-4">
           <div className="surface-dark relative isolate overflow-clip rounded-[2rem] bg-night p-6 text-white sm:p-8">
             <div aria-hidden="true" className="absolute -end-20 -top-20 -z-10 size-60 rounded-full bg-sun/25 blur-[80px]" />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sun">{tx(locale, "Coordonnées", "معلومات الاتصال")}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sun">{tx(locale, "Coordonnées", "معلومات الاتصال")}</p>
             <ul className="mt-5 grid gap-4 text-sm">
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 size-4 shrink-0 text-sun" aria-hidden="true" />
@@ -40,7 +41,7 @@ export default async function ContactPage() {
               </li>
               {settings.contactEmail ? (
                 <li>
-                  <a href={`mailto:${settings.contactEmail}`} className="flex items-center gap-3 break-all hover:text-sun-bright">
+                  <a href={`mailto:${settings.contactEmail}`} className="flex min-h-11 items-center gap-3 break-all hover:text-sun-bright">
                     <Mail className="size-4 shrink-0 text-sun" aria-hidden="true" />
                     {settings.contactEmail}
                   </a>
@@ -48,7 +49,7 @@ export default async function ContactPage() {
               ) : null}
               {settings.contactPhone ? (
                 <li>
-                  <a href={`tel:${settings.contactPhone.replace(/\s/g, "")}`} className="flex items-center gap-3 hover:text-sun-bright" dir="ltr">
+                  <a href={`tel:${settings.contactPhone.replace(/\s/g, "")}`} className="flex min-h-11 items-center gap-3 hover:text-sun-bright" dir="ltr">
                     <Phone className="size-4 shrink-0 text-sun" aria-hidden="true" />
                     {settings.contactPhone}
                   </a>
@@ -63,8 +64,9 @@ export default async function ContactPage() {
                       href={href}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/85 transition hover:border-white/40"
+                      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-3.5 py-1.5 text-xs text-white/85 sm:min-h-0 transition hover:border-white/40"
                     >
+                      <SocialIcon name={label} className="size-4 shrink-0 text-sun" />
                       {label}
                       <ArrowUpRight className="size-3.5 text-sun" aria-hidden="true" />
                       <span className="sr-only">{tx(locale, "(nouvel onglet)", "(نافذة جديدة)")}</span>

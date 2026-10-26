@@ -14,7 +14,7 @@ Les intervenants et partenaires livrés par le seed sont des contenus de démons
 4. `npm run db:seed`
 5. `npm run dev`
 
-Le site est sur http://localhost:3000 et le back-office sur http://localhost:3000/admin/login.
+Le site est sur http://localhost:8185 et le back-office sur http://localhost:8185/admin/login.
 
 Sans SMTP, l'inscription est quand même confirmée : le billet s'affiche à l'écran et le PDF se télécharge. Renseignez `SMTP_HOST` pour l'envoi.
 

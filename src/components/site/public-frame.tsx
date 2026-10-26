@@ -3,6 +3,8 @@ import { Header } from "@/components/site/header";
 import { AccentTitle, Eyebrow, Skyline } from "@/components/site/ui";
 import type { Locale } from "@/lib/i18n";
 import type { SiteData } from "@/lib/site-types";
+import { FONT_FAMILIES } from "@/app/fonts";
+import { themeCss } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 // En-tête éditorial des pages internes : même univers que le Hero de l'accueil (nuit, halo solaire, Casablanca).
@@ -44,11 +46,11 @@ export function PageIntro({
         <Eyebrow dark className="motion-safe:animate-rise">
           {kicker}
         </Eyebrow>
-        <h1 className="display mt-5 max-w-5xl text-[clamp(2.8rem,7.6vw,6.4rem)] leading-[0.92] text-balance motion-safe:animate-rise [animation-delay:0.06s]">
+        <h1 className="display mt-5 max-w-5xl text-[clamp(2.3rem,5.4vw,4.6rem)] leading-[0.96] text-balance motion-safe:animate-rise [animation-delay:0.06s]">
           <AccentTitle text={title} dark />
         </h1>
         {intro ? (
-          <p className="mt-6 max-w-2xl text-base leading-7 text-haze motion-safe:animate-rise [animation-delay:0.12s] sm:text-lg sm:leading-8">{intro}</p>
+          <p className="mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-haze motion-safe:animate-rise [animation-delay:0.12s] sm:text-lg sm:leading-8">{intro}</p>
         ) : null}
         {children ? <div className="mt-8 flex flex-wrap items-center gap-3 motion-safe:animate-rise [animation-delay:0.18s]">{children}</div> : null}
       </div>
@@ -74,15 +76,18 @@ export function PublicFrame({
   site: SiteData;
   children: React.ReactNode;
 }) {
+  const css = themeCss(site.settings.theme, FONT_FAMILIES);
   return (
     <>
+      {/* Couleurs et polices choisies dans le back-office : valeurs validées côté serveur. */}
+      {css ? <style>{css}</style> : null}
       <a
         href="#contenu"
         className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[60] focus:rounded-full focus:bg-sun focus:px-4 focus:py-2 focus:font-semibold focus:text-night"
       >
         {locale === "ar" ? "تخطي إلى المحتوى" : "Aller au contenu"}
       </a>
-      <Header locale={locale} />
+      <Header locale={locale} menu={site.settings.menu} />
       <main id="contenu" className="bg-white">
         {children}
       </main>

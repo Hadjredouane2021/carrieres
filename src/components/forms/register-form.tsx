@@ -26,7 +26,8 @@ import { Icon } from "@/components/site/icons";
 import { PrivacyContent } from "@/components/site/legal";
 import { participantIcons } from "@/components/site/participant-icons";
 import { buttonVariants } from "@/components/ui/button";
-import { CITIES, DISCOVERY_SOURCES, EDUCATION_LEVELS, labelOf, PARTICIPANT_TYPES, STUDY_YEARS } from "@/lib/constants";
+import { CITIES, DISCOVERY_SOURCES, labelOf, PARTICIPANT_TYPES, STUDY_YEARS } from "@/lib/constants";
+import { levelLabel } from "@/lib/education";
 import type { eventDateParts } from "@/lib/datetime";
 import { dictionary, tx, type Locale } from "@/lib/i18n";
 import type { SiteData } from "@/lib/site-types";
@@ -493,9 +494,9 @@ export function RegisterForm({ site, locale, when }: { site: SiteData; locale: L
                       <option value="" disabled>
                         {choose}
                       </option>
-                      {EDUCATION_LEVELS.map((level) => (
+                      {site.settings.educationLevels.filter((level) => level.visible).map((level) => (
                         <option key={level.value} value={level.value}>
-                          {ar ? level.ar : level.fr}
+                          {ar ? level.ar || level.fr : level.fr}
                         </option>
                       ))}
                     </select>
@@ -665,7 +666,7 @@ export function RegisterForm({ site, locale, when }: { site: SiteData; locale: L
                     {labelOf(PARTICIPANT_TYPES, values.participantType, locale)} — {values.organization}
                   </p>
                   <p>
-                    {labelOf(EDUCATION_LEVELS, values.educationLevel, locale)}
+                    {levelLabel(site.settings.educationLevels, values.educationLevel, locale)}
                     {values.fieldOfStudy ? ` · ${values.fieldOfStudy}` : ""}
                   </p>
                 </Summary>

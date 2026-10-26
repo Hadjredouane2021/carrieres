@@ -4,6 +4,7 @@ import { PublicFrame } from "@/components/site/public-frame";
 import { Skyline } from "@/components/site/ui";
 import { eventDateParts } from "@/lib/datetime";
 import { dictionary, tx } from "@/lib/i18n";
+import { splitAccent } from "@/lib/site-types";
 import { getLocale } from "@/server/session";
 import { getPublicSite } from "@/server/site";
 
@@ -13,6 +14,8 @@ export const instant = false;
 export default async function RegisterPage() {
   const [site, locale] = await Promise.all([getPublicSite(), getLocale()]);
   const copy = dictionary[locale].register;
+  const section = site.sections.register;
+  const [heading, accent] = splitAccent(tx(locale, section.title.fr, section.title.ar));
   const reassurance = [
     [Gift, copy.kicker],
     [Clock, tx(locale, "Environ 2 minutes", "حوالي دقيقتين")],
@@ -37,11 +40,11 @@ export default async function RegisterPage() {
               </li>
             ))}
           </ul>
-          <h1 className="display mt-6 max-w-4xl text-[clamp(2.6rem,6vw,5.6rem)] leading-[0.95] text-balance motion-safe:animate-rise [animation-delay:0.08s]">
-            {copy.heading}{" "}
-            <span className={locale === "ar" ? "text-sun-sheen" : "text-sun-sheen pe-[0.1em] font-accent text-[1.06em] italic tracking-[-0.01em]"}>{copy.accent}</span>
+          <h1 className="display mt-6 max-w-4xl text-[clamp(2.3rem,5vw,4.4rem)] leading-[0.97] text-balance motion-safe:animate-rise [animation-delay:0.08s]">
+            {heading}{" "}
+            <span className={locale === "ar" ? "text-sun-sheen" : "text-sun-sheen pe-[0.1em] font-accent text-[1.06em] italic tracking-[-0.01em]"}>{accent}</span>
           </h1>
-          <p className="mt-5 max-w-xl text-base leading-7 text-haze motion-safe:animate-rise [animation-delay:0.16s] md:text-lg md:leading-8">{copy.intro}</p>
+          <p className="mt-5 max-w-xl whitespace-pre-line text-base leading-7 text-haze motion-safe:animate-rise [animation-delay:0.16s] md:text-lg md:leading-8">{tx(locale, section.body.fr, section.body.ar)}</p>
         </div>
       </section>
       <div className="relative z-10 mx-auto -mt-24 max-w-7xl px-4 pb-20 md:-mt-32 md:px-6 md:pb-28">

@@ -1,32 +1,24 @@
 import { ArrowRight, ArrowUpRight, CalendarClock, CalendarDays, Check, Handshake, UserRound } from "lucide-react";
 import Link from "next/link";
-import { CareersExplorer } from "@/components/site/careers-explorer";
+import { CareersCarousel } from "@/components/site/careers-carousel";
 import { Icon } from "@/components/site/icons";
 import { GalleryGrid } from "@/components/site/gallery-grid";
 import { PartnersGrid } from "@/components/site/partners-grid";
 import { ProgramTimeline } from "@/components/site/program-timeline";
 import { SpeakersGallery } from "@/components/site/speakers-gallery";
-import { AccentTitle, EmptyState, SectionHeading, Skyline, TextLink } from "@/components/site/ui";
+import { AccentTitle, EmptyState, Highlighted, SectionHeading, TextLink } from "@/components/site/ui";
 import type { eventDateParts } from "@/lib/datetime";
 import { dictionary, tx, type Locale } from "@/lib/i18n";
 import { galleryEntries } from "@/lib/gallery";
 import { galleryLabels, speakerCards, speakerLabels, timelineItems, timelineLabels } from "@/lib/public-data";
 import type { SiteData } from "@/lib/site-types";
+import { WHY_TONES } from "@/lib/why-bento";
 import { cn, placeLabel } from "@/lib/utils";
 
 type Props = { site: SiteData; locale: Locale };
 type When = ReturnType<typeof eventDateParts>;
 
 
-// Composition éditoriale : une grande carte nuit, des cartes larges et compactes, une carte solaire.
-const BENTO = [
-  { span: "sm:col-span-2 lg:col-span-2 lg:row-span-2", tone: "night", featured: true },
-  { span: "lg:col-span-2", tone: "light", featured: false },
-  { span: "", tone: "dawn", featured: false },
-  { span: "", tone: "light", featured: false },
-  { span: "lg:col-span-2", tone: "sun", featured: false },
-  { span: "sm:col-span-2 lg:col-span-2", tone: "outline", featured: false },
-] as const;
 
 export function HomeWhy({ site, locale }: Props) {
   const copy = dictionary[locale].home;
@@ -39,8 +31,10 @@ export function HomeWhy({ site, locale }: Props) {
     [copy.facts.free, copy.facts.freeHint],
   ].filter((fact): fact is string[] => fact !== null);
 
+  const why = { quote: site.why[0], cards: site.why.slice(1) };
+
   return (
-    <section aria-labelledby="accueil-pourquoi" className="bg-white py-14 sm:py-20 md:py-28">
+    <section aria-labelledby="accueil-pourquoi" className="overflow-clip bg-cream py-14 sm:py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
         <SectionHeading
           id="accueil-pourquoi"
@@ -53,66 +47,49 @@ export function HomeWhy({ site, locale }: Props) {
           {facts.map(([value, label], index) => (
             <div key={label} className="flex flex-col-reverse gap-2 border-t-2 border-night pt-4">
               <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">{label}</dt>
-              <dd className={cn("display text-[clamp(2.6rem,6vw,5rem)] leading-[0.9] tabular-nums", index === 0 ? "text-sun-ink" : "text-night")}>{value}</dd>
+              <dd className={cn("display text-[clamp(2.2rem,4.4vw,3.6rem)] leading-[0.95] tabular-nums", index === 0 ? "text-sun-ink" : "text-night")}>{value}</dd>
             </div>
           ))}
         </dl>
 
         {site.why.length ? (
-          <ul className="mt-12 grid gap-3 sm:mt-16 sm:grid-cols-2 sm:gap-4 lg:grid-flow-dense lg:grid-cols-4">
-            {site.why.map((item, index) => {
-              const layout = BENTO[index % BENTO.length];
-              const dark = layout.tone === "night";
-              const sun = layout.tone === "sun";
-              return (
-                <li
-                  key={item.id}
-                  className={cn(
-                    "scroll-reveal group relative isolate flex flex-col overflow-hidden rounded-[1.75rem] p-6 transition duration-300 motion-safe:hover:-translate-y-1 sm:p-7",
-                    layout.span,
-                    dark && "surface-dark bg-night text-white lg:p-10",
-                    sun && "bg-sun text-night",
-                    layout.tone === "dawn" && "bg-dawn text-night",
-                    layout.tone === "light" && "bg-mist text-night",
-                    layout.tone === "outline" && "border-2 border-night text-night",
-                  )}
-                >
-                  {dark ? (
-                    <>
-                      <span aria-hidden="true" className="absolute -bottom-32 -end-24 -z-10 size-80 rounded-full bg-sun/40 blur-[80px]" />
-                      <span aria-hidden="true" className="display text-outline pointer-events-none absolute -end-4 -top-8 -z-10 text-[13rem] leading-none">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    </>
-                  ) : null}
-                  <div className="flex items-center justify-between">
-                    <span
+          <div className="relative mt-12 sm:mt-16">
+            {/* Décor : quadrillage et carré corail, en haut à droite. */}
+            <div aria-hidden="true" className="pointer-events-none absolute -top-14 end-0 hidden h-[26rem] w-52 md:block lg:w-60">
+              <div className="absolute end-0 top-14 h-60 w-2/3 bg-[#E5636A]" />
+              <div className="absolute inset-0 bg-[linear-gradient(#0B1B3A_1.5px,transparent_1.5px),linear-gradient(90deg,#0B1B3A_1.5px,transparent_1.5px)] bg-[size:44px_44px] [mask-image:linear-gradient(to_bottom,#000_70%,transparent)]" />
+            </div>
+
+            {why.quote ? (
+              <p className="scroll-reveal font-rounded relative max-w-[46rem] text-[clamp(1.3rem,2.2vw,1.85rem)] font-extrabold leading-[1.3] text-night">
+                <span className="sr-only">{tx(locale, why.quote.title.fr, why.quote.title.ar)} : </span>
+                <Highlighted text={tx(locale, why.quote.body.fr, why.quote.body.ar)} />
+              </p>
+            ) : null}
+
+            {why.cards.length ? (
+              <ul className="relative z-10 mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7">
+                {why.cards.map((item, index) => {
+                  const tone = WHY_TONES[index % WHY_TONES.length];
+                  return (
+                    <li
+                      key={item.id}
                       className={cn(
-                        "grid place-items-center rounded-2xl",
-                        layout.featured ? "size-14" : "size-11",
-                        dark && "bg-sun text-night",
-                        sun && "bg-night text-sun",
-                        !dark && !sun && "bg-white text-sun-ink shadow-sm",
+                        "scroll-reveal flex min-h-64 flex-col rounded-[2rem] border-2 border-night p-7 shadow-[8px_8px_0_0_#0B1B3A] transition duration-300 ease-out motion-safe:hover:-translate-x-1 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-[12px_12px_0_0_#0B1B3A] lg:min-h-[17rem]",
+                        index % 2 ? "motion-safe:hover:rotate-1" : "motion-safe:hover:-rotate-1",
+                        tone,
                       )}
                     >
-                      <Icon name={item.icon} className={layout.featured ? "size-7" : "size-5"} />
-                    </span>
-                    {!dark ? (
-                      <span className={cn("text-xs font-semibold tabular-nums tracking-[0.2em]", sun ? "text-night/70" : "text-muted")}>
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    ) : null}
-                  </div>
-                  <h3 className={cn("display mt-auto leading-[1.02]", layout.featured ? "pt-16 text-[clamp(2rem,3.6vw,3.2rem)]" : "pt-8 text-2xl")}>
-                    {tx(locale, item.title.fr, item.title.ar)}
-                  </h3>
-                  <p className={cn("mt-3 leading-7", layout.featured && "max-w-md text-lg", dark ? "text-haze" : sun ? "text-night/80" : "text-muted")}>
-                    {tx(locale, item.body.fr, item.body.ar)}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
+                      <h3 className="font-rounded text-[clamp(1.75rem,2.4vw,2.25rem)] font-extrabold leading-[1.02] tracking-[-0.01em]">{tx(locale, item.title.fr, item.title.ar)}</h3>
+                      <p className="mt-8 text-[0.95rem] leading-6 opacity-90">
+                        <Highlighted text={tx(locale, item.body.fr, item.body.ar)} />
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </section>
@@ -122,16 +99,18 @@ export function HomeWhy({ site, locale }: Props) {
 // Ruban solaire entre deux sections : slogan, date, lieu et gratuité, tous issus des paramètres de l'événement.
 export function HomeRibbon({ site, locale, when }: Props & { when: When }) {
   const copy = dictionary[locale];
-  const items = [
+  // Mentions saisies dans Paramètres → Bandeau défilant ; sinon slogan, date, ville et gratuité.
+  const custom = locale === "fr" ? site.settings.ribbonItems : [];
+  const items = custom.length ? custom : [
     tx(locale, site.settings.slogan.fr, site.settings.slogan.ar),
     when ? when.day : copy.hero.date,
     site.settings.city,
     copy.register.kicker,
   ].filter(Boolean);
   return (
-    <div aria-hidden="true" className="relative z-10 -my-7 overflow-clip py-7 sm:-my-9 sm:py-9">
-      <div className="-mx-4 -rotate-2 bg-sun py-4 shadow-[0_24px_60px_-24px_rgba(255,122,26,0.8)] sm:py-5" dir="ltr">
-        <div className="flex w-max animate-marquee [animation-duration:60s]">
+    <div aria-hidden="true" className="relative z-10 -my-7 overflow-clip bg-[linear-gradient(to_bottom,var(--cream)_55%,transparent_55%)] py-7 sm:-my-9 sm:py-9">
+      <div className="-mx-[8vw] -rotate-2 bg-sun py-4 shadow-[0_24px_60px_-24px_color-mix(in_srgb,var(--sun)_80%,transparent)] sm:py-5" dir="ltr">
+        <div className="ribbon-marquee flex w-max animate-marquee [animation-duration:35s] hover:[animation-play-state:paused]">
           {[0, 1].map((round) => (
             <ul key={round} className="flex shrink-0 items-center gap-8 pe-8">
               {[...items, ...items].map((item, index) => (
@@ -156,6 +135,7 @@ export function HomeCareers({ site, locale }: Props) {
     title: tx(locale, career.title.fr, career.title.ar),
     summary: tx(locale, career.summary.fr, career.summary.ar),
     icon: career.icon,
+    category: career.category,
   }));
 
   return (
@@ -180,9 +160,13 @@ export function HomeCareers({ site, locale }: Props) {
         </SectionHeading>
 
         {careers.length ? (
-          <CareersExplorer
+          <CareersCarousel
             careers={careers}
-            labels={{ list: copy.careersList, counter: copy.careerOf, register: copy.careerCta }}
+            labels={
+              locale === "ar"
+                ? { all: "الكل", filters: "تصفية حسب المجال", register: copy.careerCta, counter: copy.careerOf, pause: "إيقاف", play: "تشغيل" }
+                : { all: "Tout", filters: "Filtrer par famille de métiers", register: copy.careerCta, counter: copy.careerOf, pause: "Mettre en pause", play: "Relancer le défilement" }
+            }
           />
         ) : (
           <div className="mt-8 sm:mt-12 grid place-items-center gap-4 rounded-[2rem] border border-dashed border-white/20 px-6 py-16 text-center">
@@ -322,8 +306,8 @@ export function HomeLineup({ site, locale }: Props) {
         <div className="mt-14 border-t border-white/10 pt-10 sm:mt-20 sm:pt-14 md:mt-24">
           <div className="scroll-reveal flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h3 className="display text-[clamp(1.8rem,3.4vw,2.75rem)] leading-tight text-white">{tx(locale, partners.title.fr, partners.title.ar)}</h3>
-              <p className="mt-3 max-w-xl text-haze">{tx(locale, partners.body.fr, partners.body.ar)}</p>
+              <h3 className="display text-[clamp(1.6rem,2.8vw,2.3rem)] leading-tight text-white">{tx(locale, partners.title.fr, partners.title.ar)}</h3>
+              <p className="mt-3 max-w-xl whitespace-pre-line text-haze">{tx(locale, partners.body.fr, partners.body.ar)}</p>
             </div>
             <TextLink href={site.partners.length ? "/partenaires" : "/contact"} dark>
               {site.partners.length ? copy.allPartners : copy.becomePartner}
@@ -350,16 +334,8 @@ export function HomeCta({ site, locale, when }: Props & { when: When }) {
 
   return (
     <section aria-labelledby="accueil-inscription" className="bg-white px-4 pb-14 pt-4 sm:pb-20 md:px-6 md:pb-28">
-      <div className="relative isolate mx-auto max-w-7xl overflow-clip rounded-[2rem] bg-night px-6 pb-52 pt-14 text-center text-white sm:px-12 sm:pb-64 sm:pt-20 md:rounded-[2.75rem]">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,var(--night)_0%,var(--night)_48%,#23264f_68%,#7d3622_88%,#c8551a_100%)]"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 -bottom-[16rem] -z-10 mx-auto size-[28rem] rounded-full bg-[radial-gradient(circle,#fff1dc_0%,var(--sun-bright)_22%,var(--sun)_42%,transparent_70%)] sm:-bottom-[26rem] sm:size-[44rem]"
-        />
-        <Skyline className="absolute inset-x-0 bottom-0 -z-10 h-32 w-full text-night-deep sm:h-48" />
+      {/* Couleur unie, choisie dans Admin > Couleurs (« Bloc inscription »). */}
+      <div className="relative isolate mx-auto max-w-7xl overflow-clip rounded-[2rem] bg-cta px-6 [--color-white:var(--cta-fg)] py-14 text-center text-white sm:px-12 sm:py-20 md:rounded-[2.75rem]">
 
         <div className="scroll-reveal mx-auto max-w-3xl">
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-white">
@@ -372,16 +348,16 @@ export function HomeCta({ site, locale, when }: Props & { when: When }) {
               {when ? `${when.day} · ${place}` : copy.hero.date}
             </span>
           </div>
-          <h2 id="accueil-inscription" className="display mt-6 text-[clamp(2.8rem,8vw,6.4rem)] leading-[0.9] text-balance">
+          <h2 id="accueil-inscription" className="display mt-6 text-[clamp(2.3rem,5.6vw,4.6rem)] leading-[0.95] text-balance">
             <AccentTitle text={tx(locale, section.title.fr, section.title.ar)} dark />
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-haze sm:text-lg sm:leading-8">{tx(locale, section.body.fr, section.body.ar)}</p>
+          <p className="mx-auto mt-5 max-w-xl whitespace-pre-line text-base leading-7 text-haze sm:text-lg sm:leading-8">{tx(locale, section.body.fr, section.body.ar)}</p>
 
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             {status === "open" ? (
               <Link
                 href="/inscription"
-                className="group/cta inline-flex h-14 w-full items-center justify-between gap-4 rounded-full bg-sun pe-2 ps-7 font-semibold text-night shadow-[0_20px_50px_-18px_rgba(255,122,26,0.95)] transition hover:bg-sun-bright sm:w-auto"
+                className="group/cta inline-flex h-14 w-full items-center justify-between gap-4 rounded-full bg-sun pe-2 ps-7 font-semibold text-night shadow-[0_20px_50px_-18px_color-mix(in_srgb,var(--sun)_95%,transparent)] transition hover:bg-sun-bright sm:w-auto"
               >
                 {copy.home.register}
                 <span className="grid size-10 place-items-center rounded-full bg-night text-sun transition-transform motion-safe:group-hover/cta:translate-x-0.5 rtl:motion-safe:group-hover/cta:-translate-x-0.5">

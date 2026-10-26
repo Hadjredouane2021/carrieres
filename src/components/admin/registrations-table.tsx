@@ -1,10 +1,11 @@
 "use client";
 
-import { flexRender, type SortingState } from "@tanstack/react-table";
-import { getCoreRowModel, getSortedRowModel, useLegacyTable, type LegacyColumnDef } from "@tanstack/react-table/legacy";
+import * as Dropdown from "@radix-ui/react-dropdown-menu";
+import { Ban, Check, Clock3, FileDown, FileText, Mail, MailCheck, MailWarning, MoreHorizontal, QrCode, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { labelOf, STATUSES } from "@/lib/constants";
-import { resendRegistration, setRegistrationStatus } from "@/server/actions/admin";
+import { STATUS_STYLE } from "@/lib/status-style";
+import { cn, initials } from "@/lib/utils";
+import { deleteRegistrations, resendRegistration, setRegistrationStatus } from "@/server/actions/admin";
 
 export type RegistrationRow = {
   id: string;
@@ -22,119 +23,267 @@ export type RegistrationRow = {
   token: string;
 };
 
-const statuses = [
-  ["PENDING", "En attente"],
-  ["CONFIRMED", "Confirmée"],
-  ["CHECKED_IN", "Présent"],
-  ["CANCELLED", "Annulée"],
-] as const;
 
-const pill = "inline-flex items-center rounded-full border border-night/15 bg-white px-2.5 py-1 text-xs font-medium text-night transition hover:border-night/35";
+function StatusPill({ status }: { status: string }) {
+  const style = STATUS_STYLE[status] ?? STATUS_STYLE.PENDING;
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset", style.tone)}>
+      <span className={cn("size-1.5 rounded-full", style.dot)} />
+      {style.label}
+    </span>
+  );
+}
 
-const statusTone: Record<string, string> = {
-  PENDING: "bg-sun/15 text-sun-ink",
-  CONFIRMED: "bg-sky-50 text-sky-800",
-  CHECKED_IN: "bg-emerald-50 text-emerald-800",
-  CANCELLED: "bg-red-50 text-red-800",
-};
+function Hidden({ ids, back }: { ids: string[]; back: string }) {
+  return (
+    <>
+      {ids.map((id) => (
+        <input key={id} type="hidden" name="id" value={id} />
+      ))}
+      <input type="hidden" name="back" value={back} />
+    </>
+  );
+}
 
-export function RegistrationsTable({ rows }: { rows: RegistrationRow[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const columns: LegacyColumnDef<RegistrationRow>[] = [
-    { accessorKey: "reference", header: "Référence" },
-    { accessorKey: "name", header: "Participant" },
-    { accessorKey: "email", header: "E-mail" },
-    { accessorKey: "type", header: "Profil" },
-    { accessorKey: "city", header: "Ville" },
-    {
-      accessorKey: "status",
-      header: "Statut",
-      cell: ({ row }) => (
-        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusTone[row.original.status] ?? "bg-night/[0.06] text-muted"}`}>
-          {labelOf(STATUSES, row.original.status, "fr")}
-        </span>
-      ),
-    },
-    { accessorKey: "createdAt", header: "Date" },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-2">
-          <form action={setRegistrationStatus} className="flex gap-1">
-            <input type="hidden" name="id" value={row.original.id} />
-            <select name="status" defaultValue={row.original.status} aria-label={`Statut de ${row.original.name}`} className="rounded-lg border border-night/15 bg-white px-2 py-1 text-xs">
-              {statuses.map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-            <button className={pill}>Appliquer</button>
-          </form>
+function confirmDelete(count: number) {
+  return (event: React.FormEvent) => {
+    const message = count > 1 ? `Supprimer définitivement ces ${count} inscriptions ?` : "Supprimer définitivement cette inscription ?";
+    if (!window.confirm(`${message}\nLe billet et le CV associés seront perdus.`)) event.preventDefault();
+  };
+}
+
+function StatusButton({ ids, back, status, children, className }: { ids: string[]; back: string; status: string; children: React.ReactNode; className?: string }) {
+  return (
+    <form action={setRegistrationStatus}>
+      <Hidden ids={ids} back={back} />
+      <input type="hidden" name="status" value={status} />
+      <button className={className}>{children}</button>
+    </form>
+  );
+}
+
+function QuickActions({ row, back }: { row: RegistrationRow; back: string }) {
+  const base = "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition";
+  return (
+    <>
+      {row.status !== "CONFIRMED" && row.status !== "CHECKED_IN" ? (
+        <StatusButton ids={[row.id]} back={back} status="CONFIRMED" className={cn(base, "bg-night text-white hover:bg-institution")}>
+          <Check className="size-3.5" /> Confirmer
+        </StatusButton>
+      ) : null}
+      {row.status !== "PENDING" ? (
+        <StatusButton ids={[row.id]} back={back} status="PENDING" className={cn(base, "border border-night/10 text-night hover:border-amber-400 hover:bg-amber-50")}>
+          <Clock3 className="size-3.5" /> En attente
+        </StatusButton>
+      ) : null}
+    </>
+  );
+}
+
+function RowMenu({ row, back, isAdmin }: { row: RegistrationRow; back: string; isAdmin: boolean }) {
+  const item = "flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-night outline-none data-[highlighted]:bg-mist";
+  return (
+    <Dropdown.Root modal={false}>
+      <Dropdown.Trigger className="grid size-8 place-items-center rounded-full text-institution hover:bg-mist hover:text-night data-[state=open]:bg-mist" aria-label={`Actions pour ${row.name}`}>
+        <MoreHorizontal className="size-4" />
+      </Dropdown.Trigger>
+      <Dropdown.Portal>
+        <Dropdown.Content align="end" sideOffset={6} className="z-50 min-w-52 rounded-2xl border border-night/10 bg-white/95 p-1.5 shadow-xl shadow-night/10 backdrop-blur">
+          {row.status !== "CHECKED_IN" ? (
+            <StatusButton ids={[row.id]} back={back} status="CHECKED_IN" className={item}>
+              <QrCode className="size-4 text-emerald-600" /> Marquer présent
+            </StatusButton>
+          ) : null}
+          {row.status !== "CANCELLED" ? (
+            <StatusButton ids={[row.id]} back={back} status="CANCELLED" className={item}>
+              <Ban className="size-4 text-zinc-500" /> Annuler l&apos;inscription
+            </StatusButton>
+          ) : null}
+          <Dropdown.Separator className="my-1 h-px bg-night/[0.06]" />
           <form action={resendRegistration}>
-            <input type="hidden" name="id" value={row.original.id} />
-            <button className={pill} title="Renvoyer l'e-mail de confirmation et le billet">Renvoyer</button>
+            <input type="hidden" name="id" value={row.id} />
+            <input type="hidden" name="back" value={back} />
+            <button className={item}>
+              <Mail className="size-4 text-institution" /> Renvoyer le billet par e-mail
+            </button>
           </form>
-          <a className={pill} href={`/api/billet/${row.original.token}`}>PDF</a>
-          {row.original.hasCv ? <a className={pill} href={`/api/admin/cv/${row.original.id}`}>CV</a> : null}
-          <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium ${row.original.emailSent ? "text-emerald-700" : "text-sun-ink"}`}>
-            {row.original.emailSent ? "E-mail envoyé" : "E-mail en attente"}
-          </span>
-        </div>
-      ),
-    },
-  ];
+          <Dropdown.Item asChild>
+            <a className={item} href={`/api/billet/${row.token}`}>
+              <FileDown className="size-4 text-institution" /> Télécharger le billet
+            </a>
+          </Dropdown.Item>
+          {row.hasCv ? (
+            <Dropdown.Item asChild>
+              <a className={item} href={`/api/admin/cv/${row.id}`}>
+                <FileText className="size-4 text-institution" /> Télécharger le CV
+              </a>
+            </Dropdown.Item>
+          ) : null}
+          {isAdmin ? (
+            <>
+              <Dropdown.Separator className="my-1 h-px bg-night/[0.06]" />
+              <form action={deleteRegistrations} onSubmit={confirmDelete(1)}>
+                <Hidden ids={[row.id]} back={back} />
+                <button className={cn(item, "text-red-700 data-[highlighted]:bg-red-50 hover:bg-red-50")}>
+                  <Trash2 className="size-4" /> Supprimer
+                </button>
+              </form>
+            </>
+          ) : null}
+        </Dropdown.Content>
+      </Dropdown.Portal>
+    </Dropdown.Root>
+  );
+}
 
-  const table = useLegacyTable({
-    data: rows,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  });
+function MailBadge({ sent }: { sent: boolean }) {
+  return sent ? (
+    <span title="Billet envoyé par e-mail" className="text-emerald-600"><MailCheck className="size-4" /></span>
+  ) : (
+    <span title="Billet pas encore envoyé" className="text-amber-500"><MailWarning className="size-4" /></span>
+  );
+}
+
+export function RegistrationsTable({ rows, back, isAdmin }: { rows: RegistrationRow[]; back: string; isAdmin: boolean }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const visibleIds = rows.map((row) => row.id);
+  const selectedIds = visibleIds.filter((id) => selected.has(id));
+  const allSelected = rows.length > 0 && selectedIds.length === rows.length;
+
+  const toggle = (id: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(visibleIds));
+  const checkbox = "size-4 cursor-pointer rounded border-night/20 accent-[#0B1B3A]";
+
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-2xl bg-white ring-1 ring-night/[0.07] grid place-items-center gap-2 px-6 py-16 text-center">
+        <span className="grid size-12 place-items-center rounded-2xl bg-mist text-institution"><Mail className="size-5" /></span>
+        <p className="font-medium text-night">Aucune inscription pour ces filtres</p>
+        <p className="text-sm text-institution">Changez de statut ou effacez la recherche.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-night/[0.07]">
-      <table className="w-full min-w-[960px] text-start text-sm">
-        <thead className="border-b border-night/10 bg-mist/60 text-[11px] uppercase tracking-[0.12em] text-muted">
-          {table.getHeaderGroups().map((group) => (
-            <tr key={group.id}>
-              {group.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-3 py-3 font-semibold"
-                  aria-sort={header.column.getIsSorted() === "asc" ? "ascending" : header.column.getIsSorted() === "desc" ? "descending" : undefined}
-                >
-                  {header.isPlaceholder ? null : header.column.getCanSort() && header.column.id !== "actions" ? (
-                    <button type="button" className="inline-flex items-center gap-1 text-start hover:text-night" onClick={header.column.getToggleSortingHandler()}>
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      <span aria-hidden="true">{header.column.getIsSorted() === "asc" ? "↑" : header.column.getIsSorted() === "desc" ? "↓" : "↕"}</span>
-                    </button>
-                  ) : (
-                    flexRender(header.column.columnDef.header, header.getContext())
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="border-b border-night/5 align-top transition hover:bg-mist/40">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-3 py-3">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-          {rows.length === 0 ? (
+    <>
+      {/* Bureau */}
+      <div className="rounded-2xl bg-white ring-1 ring-night/[0.07] hidden overflow-hidden lg:block">
+        <table className="w-full text-start text-sm">
+          <thead className="bg-mist/50 text-[11px] uppercase tracking-[0.14em] text-institution">
             <tr>
-              <td colSpan={8} className="px-3 py-10 text-center text-muted">Aucune inscription pour ces filtres.</td>
+              <th className="w-12 px-4 py-3">
+                <input type="checkbox" className={checkbox} checked={allSelected} onChange={toggleAll} aria-label="Tout sélectionner" />
+              </th>
+              <th className="px-3 py-3 text-start font-medium">Participant</th>
+              <th className="px-3 py-3 text-start font-medium">Profil</th>
+              <th className="px-3 py-3 text-start font-medium">Statut</th>
+              <th className="px-3 py-3 text-start font-medium">Inscrit le</th>
+              <th className="px-4 py-3 text-end font-medium">Actions</th>
             </tr>
+          </thead>
+          <tbody className="divide-y divide-night/[0.05]">
+            {rows.map((row) => (
+              <tr key={row.id} className={cn("transition", selected.has(row.id) ? "bg-dawn" : "hover:bg-mist/40")}>
+                <td className="px-4 py-3">
+                  <input type="checkbox" className={checkbox} checked={selected.has(row.id)} onChange={() => toggle(row.id)} aria-label={`Sélectionner ${row.name}`} />
+                </td>
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-dawn to-mist text-xs font-semibold text-sun-ink">{initials(row.name)}</span>
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 font-medium text-night">
+                        <span className="truncate">{row.name}</span>
+                        <MailBadge sent={row.emailSent} />
+                      </p>
+                      <p className="truncate text-xs text-institution">{row.email} · <span className="font-mono">{row.reference}</span></p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-3 py-3">
+                  <p className="text-night">{row.type}</p>
+                  <p className="max-w-48 truncate text-xs text-institution">{[row.organization, row.city].filter(Boolean).join(" · ")}</p>
+                </td>
+                <td className="px-3 py-3"><StatusPill status={row.status} /></td>
+                <td className="whitespace-nowrap px-3 py-3 text-institution">{row.createdAt}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <QuickActions row={row} back={back} />
+                    <RowMenu row={row} back={back} isAdmin={isAdmin} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile et tablette */}
+      <div className="grid gap-3 lg:hidden">
+        <label className="flex items-center gap-2 px-1 text-sm text-institution">
+          <input type="checkbox" className={checkbox} checked={allSelected} onChange={toggleAll} /> Tout sélectionner
+        </label>
+        {rows.map((row) => (
+          <article key={row.id} className={cn("rounded-2xl bg-white ring-1 ring-night/[0.07] p-4 transition", selected.has(row.id) && "ring-2 ring-sun/60")}>
+            <div className="flex items-start gap-3">
+              <input type="checkbox" className={cn(checkbox, "mt-2.5")} checked={selected.has(row.id)} onChange={() => toggle(row.id)} aria-label={`Sélectionner ${row.name}`} />
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-dawn to-mist text-xs font-semibold text-sun-ink">{initials(row.name)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2 font-medium text-night">
+                  <span className="truncate">{row.name}</span>
+                  <MailBadge sent={row.emailSent} />
+                </p>
+                <p className="truncate text-xs text-institution">{row.email}</p>
+                <p className="mt-0.5 font-mono text-xs text-institution/80">{row.reference}</p>
+              </div>
+              <RowMenu row={row} back={back} isAdmin={isAdmin} />
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-institution">
+              <StatusPill status={row.status} />
+              <span className="rounded-full bg-mist px-2.5 py-1">{row.type}</span>
+              {row.city ? <span className="rounded-full bg-mist px-2.5 py-1">{row.city}</span> : null}
+              <span className="ms-auto">{row.createdAt}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 border-t border-night/[0.06] pt-3 empty:hidden">
+              <QuickActions row={row} back={back} />
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {/* Barre d'actions groupées */}
+      {selectedIds.length > 0 ? (
+        <div className="fixed inset-x-3 bottom-4 z-30 mx-auto flex max-w-3xl flex-wrap items-center gap-2 rounded-2xl bg-night/95 p-2 ps-4 text-white shadow-2xl shadow-night/40 backdrop-blur md:inset-x-auto md:start-1/2 md:-translate-x-1/2 md:ps-5 rtl:md:translate-x-1/2">
+          <p className="me-auto text-sm">
+            <span className="font-semibold text-white">{selectedIds.length}</span> sélectionnée{selectedIds.length > 1 ? "s" : ""}
+          </p>
+          <StatusButton ids={selectedIds} back={back} status="CONFIRMED" className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-sun px-3 text-sm font-medium text-night hover:bg-sun-bright">
+            <Check className="size-4" /> Confirmer
+          </StatusButton>
+          <StatusButton ids={selectedIds} back={back} status="PENDING" className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-white/10 px-3 text-sm hover:bg-white/15">
+            <Clock3 className="size-4" /> En attente
+          </StatusButton>
+          <StatusButton ids={selectedIds} back={back} status="CANCELLED" className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-white/10 px-3 text-sm hover:bg-white/15">
+            <Ban className="size-4" /> Annuler
+          </StatusButton>
+          {isAdmin ? (
+            <form action={deleteRegistrations} onSubmit={confirmDelete(selectedIds.length)}>
+              <Hidden ids={selectedIds} back={back} />
+              <button className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-red-500/90 px-3 text-sm font-medium text-white hover:bg-red-500">
+                <Trash2 className="size-4" /> Supprimer
+              </button>
+            </form>
           ) : null}
-        </tbody>
-      </table>
-    </div>
+          <button type="button" onClick={() => setSelected(new Set())} className="grid size-9 place-items-center rounded-xl text-haze hover:bg-white/10" aria-label="Vider la sélection">
+            <X className="size-4" />
+          </button>
+        </div>
+      ) : null}
+    </>
   );
 }

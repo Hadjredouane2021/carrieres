@@ -113,13 +113,13 @@ export function CareersExplorer({
               className="pointer-events-none absolute -end-24 -top-24 -z-10 size-72 rounded-full bg-sun/20 blur-[90px]"
             />
             <div className="flex flex-col sm:min-h-[22rem]">
-              <span className="grid size-14 place-items-center rounded-2xl bg-sun text-night shadow-[0_18px_40px_-16px_rgba(255,122,26,0.9)]">
+              <span className="grid size-14 place-items-center rounded-2xl bg-sun text-night shadow-[0_18px_40px_-16px_color-mix(in_srgb,var(--sun)_90%,transparent)]">
                 <Icon name={career.icon} className="size-7" />
               </span>
-              <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.28em] text-sun">
+              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.28em] text-sun">
                 {labels.counter} {number} / {total}
               </p>
-              <h3 className="display mt-3 text-[clamp(2rem,4.2vw,3.4rem)] leading-[1] text-white text-balance">{career.title}</h3>
+              <h3 className="display mt-3 text-[clamp(1.75rem,3.2vw,2.75rem)] leading-[1.05] text-white text-balance">{career.title}</h3>
               <p className="mt-5 max-w-xl text-base leading-7 text-haze sm:text-lg sm:leading-8">{career.summary}</p>
               <div className="mt-auto pt-8 sm:pt-10">
                 <Link

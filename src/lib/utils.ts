@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function appUrl() {
-  const value = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const value = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:8185";
   return value.replace(/\/$/, "");
 }
 

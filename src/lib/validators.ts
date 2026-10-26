@@ -78,6 +78,6 @@ export const userSchema = z.object({
   id: z.string().optional(),
   name: required("Le nom est obligatoire.").max(120),
   email: z.string().trim().email("Adresse e-mail invalide."),
-  role: z.enum(["ADMIN", "STAFF"]),
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "STAFF"]),
   password: z.string().optional(),
 });

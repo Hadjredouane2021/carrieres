@@ -1,9 +1,9 @@
 "use client";
 
-import { CloudUpload, Monitor, RotateCcw, Smartphone, TriangleAlert } from "lucide-react";
+import { Check, CloudUpload, Film, ImageIcon, Monitor, RotateCcw, Smartphone, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { saveHeroImage } from "@/server/actions/admin";
+import { saveHeroImage, saveHeroMedia } from "@/server/actions/admin";
 import { cn } from "@/lib/utils";
 
 const MAX_BYTES = 16 * 1024 * 1024;
@@ -14,12 +14,14 @@ const DEFAULT_POSTER = "/video/assurcarriere-hero-poster.webp";
 type Draft = { url: string; name: string; size: number; width: number; height: number };
 
 export function HeroStudio({
+  media,
   photo,
   title,
   slogan,
   day,
   place,
 }: {
+  media: "video" | "image";
   photo: string | null;
   title: string;
   slogan: string;
@@ -142,9 +144,10 @@ export function HeroStudio({
       </section>
 
       <div className="grid gap-4">
+        <MediaChoice media={media} />
         <form action={saveHeroImage} className="grid gap-4 rounded-2xl bg-white p-5 ring-1 ring-night/[0.07]">
           <div>
-            <h2 className="text-lg font-medium text-night">Nouveau poster</h2>
+            <h2 className="text-lg font-medium text-night">{media === "video" ? "Nouveau poster" : "Nouvelle photo"}</h2>
             <p className="mt-1 text-sm text-institution">JPG, PNG ou WebP, 16 Mo maximum.</p>
           </div>
           <label
@@ -248,6 +251,48 @@ export function HeroStudio({
         </section>
       </div>
     </div>
+  );
+}
+
+// Arrière-plan du Hero : la vidéo de Casablanca (l'image sert de poster) ou une photo fixe.
+function MediaChoice({ media }: { media: "video" | "image" }) {
+  const options = [
+    { value: "video", label: "Vidéo de Casablanca", hint: "Lecture en boucle, sans son. L'image ci-dessous s'affiche avant la lecture.", icon: Film },
+    { value: "image", label: "Photo fixe", hint: "Pas de vidéo : l'image ci-dessous remplit le Hero.", icon: ImageIcon },
+  ] as const;
+  return (
+    <section className="grid gap-3 rounded-2xl bg-white p-5 ring-1 ring-night/[0.07]">
+      <h2 className="text-lg font-medium text-night">Arrière-plan</h2>
+      <div className="grid gap-2">
+        {options.map(({ value, label, hint, icon: Icon }) => {
+          const active = media === value;
+          return (
+            <form key={value} action={saveHeroMedia}>
+              <input type="hidden" name="heroMedia" value={value} />
+              <button
+                disabled={active}
+                aria-pressed={active}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-2xl border p-3.5 text-start transition",
+                  active ? "cursor-default border-night bg-night text-beige shadow-lg shadow-night/20" : "border-night/10 hover:border-gold",
+                )}
+              >
+                <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", active ? "bg-sun/20 text-sun" : "bg-mist text-institution")}>
+                  <Icon className="size-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    {label}
+                    {active ? <Check className="size-4 text-sun" aria-hidden="true" /> : null}
+                  </span>
+                  <span className={cn("mt-0.5 block text-xs leading-5", active ? "text-beige/70" : "text-institution")}>{hint}</span>
+                </span>
+              </button>
+            </form>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

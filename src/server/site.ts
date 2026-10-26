@@ -1,4 +1,7 @@
 import { connection } from "next/server";
+import { parseLevels } from "@/lib/education";
+import { parseMenu } from "@/lib/menu";
+import { parseTheme } from "@/lib/theme";
 import { db } from "@/lib/prisma";
 import { fallbackSections, publicCopy, type SiteData } from "@/lib/site-types";
 
@@ -43,11 +46,25 @@ export async function getPublicSite(): Promise<SiteData> {
       facebook: settings?.facebook ?? "",
       linkedin: settings?.linkedin ?? "",
       instagram: settings?.instagram ?? "",
-      youtube: settings?.youtube ?? "",
+      tiktok: settings?.tiktok ?? "",
       registrationOpen: settings?.registrationOpen ?? true,
       capacity: settings?.capacity ?? 1500,
       confirmedCount,
       heroImage: settings?.heroImage ?? "",
+      heroMedia: settings?.heroMedia === "image" ? "image" : "video",
+      heroMarquee: (settings?.heroMarquee ?? "")
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(0, 20),
+      menu: parseMenu(settings?.menuItems),
+      educationLevels: parseLevels(settings?.educationLevels),
+      theme: parseTheme(settings?.theme),
+      ribbonItems: (settings?.ribbonItems ?? "")
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(0, 12),
     },
     sections: sectionMap,
     why: why.map((item) => ({
@@ -61,6 +78,7 @@ export async function getPublicSite(): Promise<SiteData> {
       title: pair(item.titleFr, item.titleAr),
       summary: pair(item.summaryFr, item.summaryAr),
       icon: item.icon,
+      category: item.category,
     })),
     program: program.map((item) => ({
       id: item.id,

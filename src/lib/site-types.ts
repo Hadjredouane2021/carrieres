@@ -1,3 +1,7 @@
+import type { EducationLevel } from "@/lib/education";
+import type { MenuConfig } from "@/lib/menu";
+import type { ThemeConfig } from "@/lib/theme";
+
 export type Localized = { fr: string; ar: string };
 export type SectionCopy = { title: Localized; body: Localized };
 
@@ -13,15 +17,21 @@ export type SiteData = {
     facebook: string;
     linkedin: string;
     instagram: string;
-    youtube: string;
+    tiktok: string;
     registrationOpen: boolean;
     capacity: number;
     confirmedCount: number;
     heroImage: string;
+    heroMedia: "video" | "image";
+    ribbonItems: string[];
+    heroMarquee: string[];
+    menu: MenuConfig;
+    educationLevels: EducationLevel[];
+    theme: ThemeConfig;
   };
   sections: Record<string, SectionCopy>;
   why: { id: string; title: Localized; body: Localized; icon: string }[];
-  careers: { id: string; title: Localized; summary: Localized; icon: string }[];
+  careers: { id: string; title: Localized; summary: Localized; icon: string; category: string }[];
   program: {
     id: string;
     startTime: string;
@@ -48,7 +58,7 @@ export function publicCopy(value: string) {
 export const fallbackSections: Record<string, SectionCopy> = {
   hero: {
     title: { fr: "Le Forum des Métiers de l'Assurance", ar: "منتدى مهن التأمين" },
-    body: { fr: "Choisis ton avenir", ar: "اختر مستقبلك" },
+    body: { fr: "Une journée pour découvrir les métiers, rencontrer les entreprises du secteur et choisir une voie concrète.", ar: "يوم لاكتشاف المهن ولقاء مقاولات القطاع واختيار مسار ملموس." },
   },
   about: {
     title: { fr: "Une journée pour tracer sa route", ar: "يوم لرسم مسارك" },
@@ -117,4 +127,21 @@ export const fallbackSections: Record<string, SectionCopy> = {
     title: { fr: "Questions fréquentes", ar: "أسئلة متداولة" },
     body: { fr: "L'essentiel avant de vous déplacer.", ar: "الأساسي قبل الحضور." },
   },
+  register: {
+    title: { fr: "Réserve ta place | au Forum 2026", ar: "احجز مقعدك | في منتدى 2026" },
+    body: {
+      fr: "Quatre étapes, deux minutes. Ton billet nominatif et ton QR code d'accès sont délivrés dès la confirmation.",
+      ar: "أربع خطوات لحجز مقعدك. تُسلَّم التذكرة ورمز QR عند التأكيد.",
+    },
+  },
 };
+
+// « Début | suite en italique » : sans « | », seul le dernier mot est mis en accent.
+export function splitAccent(text: string): [string, string] {
+  const [head, ...rest] = text.split("|");
+  if (rest.length) return [head.trim(), rest.join(" ").trim()];
+  const words = text.trim().split(/\s+/);
+  if (words.length < 2) return [text.trim(), ""];
+  const last = words.pop()!;
+  return [words.join(" "), last];
+}

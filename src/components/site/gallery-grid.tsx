@@ -3,7 +3,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 
 export type GalleryEntry = { id: string; kind: "image" | "youtube" | "vimeo"; src: string; caption: string };
 
@@ -25,25 +24,28 @@ export function GalleryGrid({
   return (
     <>
       <ul className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-        {items.map((item, index) => {
-          const wide = index % 7 === 0 && items.length > 2;
+        {items.map((item) => {
           return (
-            <li key={item.id} className={cn("scroll-reveal", wide && "sm:col-span-2")}>
-              <figure className="group h-full overflow-hidden rounded-[1.5rem] bg-night ring-1 ring-night/10">
+            <li key={item.id} className="scroll-reveal">
+              <figure className="group flex h-full flex-col overflow-hidden rounded-[1.5rem] bg-night ring-1 ring-night/10">
                 {item.kind === "image" ? (
                   <button
                     type="button"
                     onClick={() => setCurrent(images.indexOf(item))}
-                    className="relative block w-full overflow-hidden"
+                    className="relative block aspect-[4/3] w-full overflow-hidden"
                     aria-label={`${labels.open}${item.caption ? ` : ${item.caption}` : ""}`}
                   >
+                    {/* Fond : la même image floutée, pour remplir le cadre sans déformer ni rogner la photo. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.src} alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl" />
+                    {/* Image entière, jamais agrandie au-delà de sa taille réelle (pas de flou sur les petits fichiers). */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.src}
                       alt={item.caption}
                       loading="lazy"
                       decoding="async"
-                      className={cn("w-full object-cover transition duration-700 motion-safe:group-hover:scale-[1.03]", wide ? "aspect-[16/9]" : "aspect-[4/3]")}
+                      className="relative size-full object-scale-down transition duration-700 motion-safe:group-hover:scale-[1.03]"
                     />
                     <span
                       aria-hidden="true"
@@ -62,7 +64,7 @@ export function GalleryGrid({
                     className="aspect-video w-full"
                   />
                 )}
-                {item.caption ? <figcaption className="px-5 py-4 text-sm text-haze">{item.caption}</figcaption> : null}
+                {item.caption ? <figcaption className="mt-auto px-5 py-4 text-sm text-haze">{item.caption}</figcaption> : null}
               </figure>
             </li>
           );

@@ -37,7 +37,7 @@ export function Section({
 
 export function Eyebrow({ children, dark = false, className }: { children: React.ReactNode; dark?: boolean; className?: string }) {
   return (
-    <p className={cn("flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.28em]", dark ? "text-sun" : "text-sun-ink", className)}>
+    <p className={cn("flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.28em]", dark ? "text-sun" : "text-sun-ink", className)}>
       <span className="h-px w-8 bg-current" aria-hidden="true" />
       {children}
     </p>
@@ -75,7 +75,7 @@ export function SectionHeading({
         <h2
           id={id}
           className={cn(
-            "display text-[clamp(2.5rem,6.2vw,5.4rem)] leading-[0.92] text-balance",
+            "display text-[clamp(2.1rem,4.4vw,3.9rem)] leading-[0.98] text-balance",
             showEyebrow && "mt-4",
             dark ? "text-white" : "text-night",
           )}
@@ -85,7 +85,7 @@ export function SectionHeading({
       </div>
       {intro || children ? (
         <div className="scroll-reveal grid justify-items-start gap-5 lg:pb-2">
-          {intro ? <p className={cn("max-w-xl text-base leading-7 sm:text-lg sm:leading-8", dark ? "text-haze" : "text-muted")}>{intro}</p> : null}
+          {intro ? <p className={cn("max-w-xl whitespace-pre-line text-base leading-7 sm:text-lg sm:leading-8", dark ? "text-haze" : "text-muted")}>{intro}</p> : null}
           {children}
         </div>
       ) : null}
@@ -113,7 +113,7 @@ export function TextLink({ href, children, dark = false }: { href: string; child
   return (
     <Link
       href={href}
-      className={cn("group inline-flex items-center gap-2 text-sm font-semibold underline-offset-4 hover:underline", dark ? "text-white" : "text-night")}
+      className={cn("group inline-flex min-h-11 items-center gap-2 text-sm font-semibold underline-offset-4 hover:underline", dark ? "text-white" : "text-night")}
     >
       {children}
       <ArrowRight className={cn("size-4 transition-transform motion-safe:group-hover:translate-x-0.5 rtl:-scale-x-100", dark ? "text-sun" : "text-sun-ink")} aria-hidden="true" />
@@ -155,7 +155,7 @@ const badgeTones = {
 
 export function Badge({ tone = "sun", className, children }: { tone?: keyof typeof badgeTones; className?: string; children: React.ReactNode }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]", badgeTones[tone], className)}>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]", badgeTones[tone], className)}>
       {children}
     </span>
   );
@@ -244,5 +244,23 @@ export function NightDecor({ glow = "end" }: { glow?: "end" | "start" }) {
       <div className={cn("absolute -top-48 size-[38rem] rounded-full bg-sun/20 blur-[130px]", glow === "end" ? "end-[-12%]" : "start-[-12%]")} />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(70%_60%_at_80%_10%,#000,transparent)]" />
     </div>
+  );
+}
+
+// Mise en relief d'un mot saisi entre astérisques dans le back-office : « Envie de découvrir *l'assurance* autrement ».
+export function Highlighted({ text }: { text: string }) {
+  const parts = text.split(/(\*[^*\n]+\*)/g);
+  return (
+    <>
+      {parts.map((part, index) =>
+        /^\*[^*\n]+\*$/.test(part) ? (
+          <mark key={index} className="inline-block -rotate-1 box-decoration-clone rounded-[0.6rem] border-2 border-night bg-[#3DD6AE] px-1 leading-tight text-night shadow-[2px_2px_0_0_#0B1B3A]">
+            {part.slice(1, -1)}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }

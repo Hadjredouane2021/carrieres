@@ -52,7 +52,7 @@ export default async function ForumPage() {
               {tx(locale, "Notre vocation", "رسالتنا")}
             </h2>
             {lead ? (
-              <p className="display mt-6 text-[clamp(1.7rem,3.4vw,2.9rem)] leading-[1.12] text-night text-balance">
+              <p className="display mt-6 text-[clamp(1.45rem,2.6vw,2.2rem)] leading-[1.2] text-night text-balance">
                 <span className="text-sun" aria-hidden="true">
                   «{" "}
                 </span>
@@ -92,14 +92,14 @@ export default async function ForumPage() {
               const TypeIcon = participantIcons[type.value];
               return (
                 <li key={type.value} className="scroll-reveal flex items-center gap-3 sm:gap-5">
-                  <span className="display inline-flex items-center gap-3 text-[clamp(2rem,6vw,4.8rem)] leading-[1.05] text-white">
+                  <span className="display inline-flex items-center gap-3 text-[clamp(1.6rem,4vw,3.2rem)] leading-[1.1] text-white">
                     <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sun text-night sm:size-14 sm:rounded-2xl">
                       <TypeIcon className="size-4 sm:size-7" aria-hidden="true" />
                     </span>
                     {tx(locale, type.fr, type.ar)}
                   </span>
                   {index < audiences.length - 1 ? (
-                    <span aria-hidden="true" className="font-accent text-[clamp(2rem,6vw,4.8rem)] italic leading-none text-sun">
+                    <span aria-hidden="true" className="font-accent text-[clamp(1.6rem,4vw,3.2rem)] italic leading-none text-sun">
                       /
                     </span>
                   ) : null}
@@ -126,7 +126,7 @@ export default async function ForumPage() {
             <div className="mt-10 grid gap-5 sm:mt-14 lg:grid-cols-2 lg:gap-8">
               {site.careers.length ? (
                 <div className="scroll-reveal rounded-[2rem] border border-night/10 p-6 sm:p-8">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sun-ink">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sun-ink">
                     {site.careers.length} {tx(locale, "métiers à explorer", "مهن للاكتشاف")}
                   </p>
                   <ul className="mt-5 flex flex-wrap gap-2">
@@ -149,7 +149,7 @@ export default async function ForumPage() {
               ) : null}
               {moments.length ? (
                 <div className="scroll-reveal rounded-[2rem] bg-dawn p-6 sm:p-8">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sun-ink">{tx(locale, "Temps forts", "أبرز اللحظات")}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sun-ink">{tx(locale, "Temps forts", "أبرز اللحظات")}</p>
                   <ul className="mt-5 grid gap-3">
                     {moments.map((item) => (
                       <li key={item.id} className="flex items-baseline gap-4 rounded-2xl bg-white px-4 py-3">
@@ -238,7 +238,7 @@ function PracticalCard({ icon: CardIcon, label, children }: { icon: typeof Calen
       <span className="grid size-11 place-items-center rounded-2xl bg-night text-sun">
         <CardIcon className="size-5" aria-hidden="true" />
       </span>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sun-ink">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.24em] text-sun-ink">{label}</span>
       <div>{children}</div>
     </li>
   );

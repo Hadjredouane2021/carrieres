@@ -96,7 +96,7 @@ export function ProgramTimeline({
                 {key ? <span aria-hidden="true" className="absolute -end-16 -top-16 -z-10 size-48 rounded-full bg-sun/25 blur-[60px]" /> : null}
                 <span
                   className={cn(
-                    "inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
+                    "inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]",
                     key ? "bg-sun text-night" : "bg-night/[0.06] text-night/70",
                   )}
                 >

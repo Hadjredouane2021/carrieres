@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { labelOf, PARTICIPANT_TYPES, STATUSES } from "@/lib/constants";
+import { levelLabel, parseLevels } from "@/lib/education";
 import { db } from "@/lib/prisma";
 import { registrationWhere } from "@/server/registration-query";
 
@@ -18,6 +19,8 @@ export async function GET(request: Request) {
     }),
     orderBy: { createdAt: "desc" },
   });
+  const settings = await db().eventSettings.findUnique({ where: { id: "main" }, select: { educationLevels: true } });
+  const levels = parseLevels(settings?.educationLevels);
   const header = ["Référence", "Civilité", "Nom", "Prénom", "E-mail", "Téléphone", "Ville", "Profil", "Organisation", "Niveau", "Filière", "Année", "Statut", "CV", "Créée le"];
   const data = rows.map((row) => [
     row.reference,
@@ -29,7 +32,7 @@ export async function GET(request: Request) {
     row.city,
     labelOf(PARTICIPANT_TYPES, row.participantType, "fr"),
     row.organization,
-    row.educationLevel,
+    levelLabel(levels, row.educationLevel),
     row.fieldOfStudy,
     row.studyYear,
     labelOf(STATUSES, row.status, "fr"),

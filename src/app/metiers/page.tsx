@@ -1,8 +1,8 @@
-import { ArrowDown, Compass } from "lucide-react";
-import { CareersExplorer } from "@/components/site/careers-explorer";
+import { ArrowUp, Compass } from "lucide-react";
+import { CareersCarousel } from "@/components/site/careers-carousel";
 import { Icon } from "@/components/site/icons";
 import { PageIntro, PublicFrame } from "@/components/site/public-frame";
-import { Badge, Container, CtaLink, EmptyState, NightDecor, Section, SectionHeading } from "@/components/site/ui";
+import { Badge, Container, CtaLink, EmptyState, Section, SectionHeading } from "@/components/site/ui";
 import { dictionary, tx } from "@/lib/i18n";
 import { getLocale } from "@/server/session";
 import { getPublicSite } from "@/server/site";
@@ -19,6 +19,7 @@ export default async function CareersPage() {
     title: tx(locale, career.title.fr, career.title.ar),
     summary: tx(locale, career.summary.fr, career.summary.ar),
     icon: career.icon,
+    category: career.category,
   }));
 
   return (
@@ -32,15 +33,27 @@ export default async function CareersPage() {
 
       {careers.length ? (
         <>
-          <Section tone="night" labelledBy="metiers-explorer" className="rounded-b-[2rem] md:rounded-b-[2.75rem]">
-            <NightDecor />
-            <Container>
-              <h2 id="metiers-explorer" className="display text-[clamp(1.9rem,4vw,3rem)] leading-tight">
+          {/* Même carrousel 3D que l'accueil, prolongé depuis l'en-tête nuit. */}
+          <section aria-labelledby="metiers-carrousel" className="surface-dark relative isolate overflow-clip rounded-b-[2rem] bg-night pb-14 pt-6 text-white sm:pb-20 md:rounded-b-[3rem] md:pb-28">
+            <div aria-hidden="true" className="absolute inset-0 -z-10">
+              <div className="absolute -top-48 end-[-12%] size-[38rem] rounded-full bg-sun/20 blur-[130px]" />
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(70%_60%_at_80%_10%,#000,transparent)]" />
+            </div>
+            <div className="mx-auto max-w-7xl px-4 md:px-6">
+              <h2 id="metiers-carrousel" className="display text-center text-[clamp(1.9rem,4vw,3rem)] leading-tight">
                 {tx(locale, "Choisis un métier, découvre sa mission", "اختر مهنة واكتشف مهمتها")}
               </h2>
-              <CareersExplorer careers={careers} labels={{ list: copy.careersList, counter: copy.careerOf, register: copy.careerCta }} syncHash />
-            </Container>
-          </Section>
+              <CareersCarousel
+                careers={careers}
+                syncHash
+                labels={
+                  locale === "ar"
+                    ? { all: "الكل", filters: "تصفية حسب المجال", register: copy.careerCta, counter: copy.careerOf, pause: "إيقاف", play: "تشغيل" }
+                    : { all: "Tout", filters: "Filtrer par famille de métiers", register: copy.careerCta, counter: copy.careerOf, pause: "Mettre en pause", play: "Relancer le défilement" }
+                }
+              />
+            </div>
+          </section>
 
           <Section labelledBy="metiers-index">
             <Container>
@@ -53,7 +66,7 @@ export default async function CareersPage() {
               <ul className="mt-10 grid gap-4 sm:mt-14 sm:grid-cols-2 lg:grid-cols-4">
                 {careers.map((career, index) => (
                   <li key={career.id} className="scroll-reveal">
-                    {/* Ancre native : l'explorateur suit l'évènement hashchange, que le routeur de Next ne déclenche pas. */}
+                    {/* Ancre native : le carrousel suit l'évènement hashchange, que le routeur de Next ne déclenche pas. */}
                     <a
                       href={`#metier-${career.id}`}
                       className="group flex h-full flex-col rounded-[1.75rem] border border-night/10 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-sun/60 hover:shadow-[0_24px_60px_-34px_rgba(11,27,58,0.4)] motion-reduce:hover:translate-y-0"
@@ -67,8 +80,8 @@ export default async function CareersPage() {
                       <span className="display mt-8 text-2xl leading-tight text-night">{career.title}</span>
                       <span className="mt-3 flex-1 text-sm leading-6 text-muted">{career.summary}</span>
                       <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-night">
-                        {tx(locale, "Voir dans l'explorateur", "عرض في المستكشف")}
-                        <ArrowDown className="size-4 text-sun-ink transition-transform motion-safe:group-hover:-translate-y-0.5" aria-hidden="true" />
+                        {tx(locale, "Voir dans le carrousel", "عرض في العارض")}
+                        <ArrowUp className="size-4 text-sun-ink transition-transform motion-safe:group-hover:-translate-y-0.5" aria-hidden="true" />
                       </span>
                     </a>
                   </li>

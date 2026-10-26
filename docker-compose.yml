@@ -8,7 +8,7 @@ services:
       MYSQL_USER: forum
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-forum_password}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3307}:3306"
     volumes:
       - db_data:/var/lib/mysql
     command:
@@ -27,6 +27,7 @@ services:
       context: .
       args:
         APP_URL: ${APP_URL:-http://localhost}
+        NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:-}
     restart: unless-stopped
     env_file:
       - .env
@@ -38,7 +39,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "8185:8185"
     volumes:
       - uploads:/app/public/uploads
       - cv_files:/app/storage/cv

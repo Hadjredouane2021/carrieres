@@ -39,7 +39,7 @@ export default async function HeroAdminPage({ searchParams }: { searchParams: Pr
       <AdminHeader
         eyebrow="Site public"
         title="Hero de l'accueil"
-        description="Le Hero de l'accueil diffuse la vidéo de Casablanca. L'image choisie ici sert de poster : elle s'affiche avant la lecture, et seule pour les visiteurs qui limitent les animations. Sans image, le poster tiré de la vidéo est utilisé."
+        description="Choisissez l'arrière-plan du Hero : la vidéo de Casablanca, ou une photo fixe. En mode vidéo, l'image sert de poster avant la lecture et pour les visiteurs qui limitent les animations. Sans image, le poster tiré de la vidéo est utilisé."
         actions={
           <Link href="/" target="_blank" className={cn(buttonVariants({ variant: "outline", size: "md" }))}>
             Voir l&apos;accueil
@@ -48,7 +48,7 @@ export default async function HeroAdminPage({ searchParams }: { searchParams: Pr
         }
       />
       <Flash error={query.error} ok={query.ok} />
-      <HeroStudio key={photo ?? "illustration"} photo={photo} title={title} slogan={slogan} day={when?.day ?? "Novembre 2026"} place={place} />
+      <HeroStudio key={photo ?? "illustration"} media={settings?.heroMedia === "image" ? "image" : "video"} photo={photo} title={title} slogan={slogan} day={when?.day ?? "Novembre 2026"} place={place} />
       <section className="rounded-2xl bg-white p-5 ring-1 ring-night/[0.07] md:p-6">
         <h2 className="text-lg font-medium text-night">Textes affichés</h2>
         <dl className="mt-3 divide-y divide-night/5">

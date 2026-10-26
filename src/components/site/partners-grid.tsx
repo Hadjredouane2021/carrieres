@@ -70,7 +70,7 @@ export function PartnersGrid({
     <div className="grid gap-12">
       {tiers.map((tier) => (
         <section key={tier.value} aria-label={labelOf(PARTNER_TIERS, tier.value, locale)}>
-          <p className={cn("mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em]", dark ? "text-sun" : "text-sun-ink")}>
+          <p className={cn("mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em]", dark ? "text-sun" : "text-sun-ink")}>
             {labelOf(PARTNER_TIERS, tier.value, locale)}
             <span className={cn("h-px flex-1", dark ? "bg-white/10" : "bg-night/10")} aria-hidden="true" />
             <span className={dark ? "text-haze" : "text-muted"}>{tier.items.length}</span>

@@ -63,7 +63,7 @@ export function SpeakersGallery({
                 </div>
                 {speaker.org || speaker.bio ? (
                   <div className="p-4 sm:p-6">
-                    {speaker.org ? <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-haze">{speaker.org}</span> : null}
+                    {speaker.org ? <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-haze">{speaker.org}</span> : null}
                     {speaker.bio ? <span className="mt-2 line-clamp-3 text-sm leading-6 text-haze max-sm:hidden">{speaker.bio}</span> : null}
                   </div>
                 ) : null}
@@ -77,7 +77,7 @@ export function SpeakersGallery({
                   <div className="p-6 sm:p-10">
                     <Dialog.Title className="display text-3xl leading-tight sm:text-4xl">{speaker.name}</Dialog.Title>
                     {speaker.role ? <p className="mt-2 text-sun-bright">{speaker.role}</p> : null}
-                    {speaker.org ? <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-haze">{speaker.org}</p> : null}
+                    {speaker.org ? <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-haze">{speaker.org}</p> : null}
                     <Dialog.Description className="mt-6 whitespace-pre-line leading-7 text-white/85">{speaker.bio || speaker.role}</Dialog.Description>
                   </div>
                 </div>

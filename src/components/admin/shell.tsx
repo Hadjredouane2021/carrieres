@@ -6,6 +6,8 @@ import {
   CalendarDays,
   CircleAlert,
   CircleCheck,
+  ClipboardList,
+  Copyright,
   Handshake,
   HelpCircle,
   Images,
@@ -14,6 +16,7 @@ import {
   Mail,
   Menu,
   Mic,
+  Palette,
   PanelTop,
   QrCode,
   Settings,
@@ -43,6 +46,9 @@ const groups = [
     label: "Contenus du site",
     items: [
       { href: "/admin/hero", label: "Hero de l'accueil", icon: PanelTop, admin: true },
+      { href: "/admin/menus", label: "Menus", icon: Menu, admin: true },
+      { href: "/admin/couleurs", label: "Couleurs et polices", icon: Palette, admin: true },
+      { href: "/admin/formulaire", label: "Formulaire d'inscription", icon: ClipboardList, admin: true },
       { href: "/admin/programme", label: "Programme", icon: CalendarDays, admin: true },
       { href: "/admin/metiers", label: "Métiers", icon: Briefcase, admin: true },
       { href: "/admin/intervenants", label: "Intervenants", icon: Mic, admin: true },
@@ -51,13 +57,14 @@ const groups = [
       { href: "/admin/faq", label: "FAQ", icon: HelpCircle, admin: true },
       { href: "/admin/galerie", label: "Galerie", icon: Images, admin: true },
       { href: "/admin/contenu", label: "Textes", icon: Type, admin: true },
+      { href: "/admin/credits", label: "Crédits", icon: Copyright, admin: true },
     ],
   },
   {
     label: "Administration",
     items: [
       { href: "/admin/parametres", label: "Paramètres", icon: Settings, admin: true },
-      { href: "/admin/utilisateurs", label: "Comptes", icon: UserCog, admin: true },
+      { href: "/admin/utilisateurs", label: "Comptes", icon: UserCog, admin: true, super: true },
     ],
   },
 ];
@@ -72,14 +79,17 @@ export function AdminShell({
   children,
 }: {
   name: string;
-  role: "ADMIN" | "STAFF";
+  role: "SUPER_ADMIN" | "ADMIN" | "STAFF";
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [openedAt, setOpenedAt] = useState(pathname);
   const visible = groups
-    .map((group) => ({ ...group, items: group.items.filter((item) => role === "ADMIN" || !item.admin) }))
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => ("super" in item && item.super ? role === "SUPER_ADMIN" : role !== "STAFF" || !item.admin)),
+    }))
     .filter((group) => group.items.length);
   const current = groups.flatMap((group) => group.items).find((item) => isActive(pathname, item.href));
 
@@ -106,14 +116,14 @@ export function AdminShell({
         <div className="flex items-center justify-between px-5 pb-4 pt-6">
           <Link href="/admin" className="flex items-center gap-3 rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-fma.png" alt="Assur'Carrière" width={185} height={74} className="h-9 w-auto brightness-0 invert" />
+            <img src="/logo-assurcarriere.png" alt="Assur'Carrière" width={466} height={187} className="h-9 w-auto brightness-0 invert" />
           </Link>
           <button type="button" className="grid size-9 place-items-center rounded-full hover:bg-white/10 md:hidden" onClick={() => setOpen(false)} aria-label="Fermer le menu">
             <X className="size-5" aria-hidden="true" />
           </button>
         </div>
         <p className="mx-5 mb-4 rounded-xl bg-white/[0.06] px-3 py-2 text-xs text-white/70">
-          Espace {role === "ADMIN" ? "administration" : "accueil"}
+          Espace {role === "STAFF" ? "accueil" : "administration"}
         </p>
         <nav aria-label="Back-office" className="grid gap-5 px-3 pb-6">
           {visible.map((group) => (
@@ -170,7 +180,7 @@ export function AdminShell({
           </div>
           <div className="flex items-center gap-3">
             <p className="hidden text-sm text-muted sm:block">
-              {name} · <span className="font-medium text-night">{role === "ADMIN" ? "Administration" : "Accueil"}</span>
+              {name} · <span className="font-medium text-night">{role === "SUPER_ADMIN" ? "Super administration" : role === "ADMIN" ? "Administration" : "Accueil"}</span>
             </p>
             <form action={logout}>
               <button className="inline-flex h-9 items-center gap-2 rounded-full border border-night/10 px-3 text-sm text-night transition hover:bg-mist">

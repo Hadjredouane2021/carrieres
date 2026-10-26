@@ -1,15 +1,21 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { unlink } from "fs/promises";
+import path from "path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { MediaType, PartnerTier, RegistrationStatus, Role } from "@/generated/prisma/client";
 import { fromCasablancaInput } from "@/lib/datetime";
+import { parseCredits } from "@/lib/credits";
+import { parseTheme } from "@/lib/theme";
+import { parseLevels } from "@/lib/education";
+import { parseMenu } from "@/lib/menu";
 import { db } from "@/lib/prisma";
 import { savePublicImage } from "@/lib/uploads";
 import { userSchema } from "@/lib/validators";
 import { deliverRegistration } from "@/server/notifications";
-import { requireUser } from "@/server/session";
+import { requireSuperAdmin, requireUser } from "@/server/session";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -26,7 +32,8 @@ function order(formData: FormData) {
 }
 
 function done(path: string, error?: string): never {
-  redirect(error ? `${path}?error=${encodeURIComponent(error)}` : `${path}?ok=1`);
+  const separator = path.includes("?") ? "&" : "?";
+  redirect(error ? `${path}${separator}error=${encodeURIComponent(error)}` : `${path}${separator}ok=1`);
 }
 
 function refreshSite() {
@@ -39,6 +46,50 @@ async function imageField(formData: FormData, urlKey: string) {
   const file = formData.get("file");
   if (file instanceof File && file.size > 0) return savePublicImage(file);
   return text(formData, urlKey);
+}
+
+export async function saveMenu(formData: FormData) {
+  await requireUser(true);
+  const raw = text(formData, "menu");
+  if (formData.get("reset") === "1") {
+    await db().eventSettings.upsert({ where: { id: "main" }, update: { menuItems: "" }, create: { id: "main", menuItems: "" } });
+  } else {
+    const menu = parseMenu(raw);
+    if (!menu.items.some((item) => item.visible)) done("/admin/menus", "Gardez au moins un lien visible dans le menu.");
+    const value = JSON.stringify(menu);
+    await db().eventSettings.upsert({ where: { id: "main" }, update: { menuItems: value }, create: { id: "main", menuItems: value } });
+  }
+  revalidatePath("/", "layout");
+  done("/admin/menus");
+}
+
+export async function saveEducationLevels(formData: FormData) {
+  await requireUser(true);
+  let value = "";
+  if (formData.get("reset") !== "1") {
+    const levels = parseLevels(text(formData, "levels"));
+    if (!levels.some((level) => level.visible)) done("/admin/formulaire", "Gardez au moins un niveau d'études visible.");
+    value = JSON.stringify(levels);
+  }
+  await db().eventSettings.upsert({ where: { id: "main" }, update: { educationLevels: value }, create: { id: "main", educationLevels: value } });
+  revalidatePath("/inscription");
+  done("/admin/formulaire");
+}
+
+export async function saveTheme(formData: FormData) {
+  await requireUser(true);
+  const value = formData.get("reset") === "1" ? "" : JSON.stringify(parseTheme(text(formData, "theme")));
+  await db().eventSettings.upsert({ where: { id: "main" }, update: { theme: value }, create: { id: "main", theme: value } });
+  revalidatePath("/", "layout");
+  done("/admin/couleurs");
+}
+
+export async function saveCredits(formData: FormData) {
+  await requireUser(true);
+  const value = formData.get("reset") === "1" ? "" : JSON.stringify(parseCredits(text(formData, "credits")));
+  await db().eventSettings.upsert({ where: { id: "main" }, update: { credits: value }, create: { id: "main", credits: value } });
+  revalidatePath("/credits");
+  done("/admin/credits");
 }
 
 export async function saveSettings(formData: FormData) {
@@ -57,12 +108,14 @@ export async function saveSettings(formData: FormData) {
       city: text(formData, "city") || "Casablanca",
       sloganFr: text(formData, "sloganFr") || "Choisis ton avenir",
       sloganAr: text(formData, "sloganAr"),
+      ribbonItems: text(formData, "ribbonItems").slice(0, 2000),
+      heroMarquee: text(formData, "heroMarquee").slice(0, 3000),
       contactEmail: email,
       contactPhone: text(formData, "contactPhone"),
       facebook: text(formData, "facebook"),
       linkedin: text(formData, "linkedin"),
       instagram: text(formData, "instagram"),
-      youtube: text(formData, "youtube"),
+      tiktok: text(formData, "tiktok"),
       registrationOpen: flag(formData, "registrationOpen"),
       capacity,
     },
@@ -73,12 +126,14 @@ export async function saveSettings(formData: FormData) {
       city: text(formData, "city") || "Casablanca",
       sloganFr: text(formData, "sloganFr") || "Choisis ton avenir",
       sloganAr: text(formData, "sloganAr"),
+      ribbonItems: text(formData, "ribbonItems").slice(0, 2000),
+      heroMarquee: text(formData, "heroMarquee").slice(0, 3000),
       contactEmail: email,
       contactPhone: text(formData, "contactPhone"),
       facebook: text(formData, "facebook"),
       linkedin: text(formData, "linkedin"),
       instagram: text(formData, "instagram"),
-      youtube: text(formData, "youtube"),
+      tiktok: text(formData, "tiktok"),
       registrationOpen: flag(formData, "registrationOpen"),
       capacity,
     },
@@ -106,11 +161,20 @@ export async function saveHeroImage(formData: FormData) {
   done("/admin/hero");
 }
 
+export async function saveHeroMedia(formData: FormData) {
+  await requireUser(true);
+  const heroMedia = text(formData, "heroMedia");
+  if (heroMedia !== "video" && heroMedia !== "image") done("/admin/hero", "Choix d'arrière-plan invalide.");
+  await db().eventSettings.update({ where: { id: "main" }, data: { heroMedia } });
+  refreshSite();
+  done("/admin/hero");
+}
+
 export async function saveSection(formData: FormData) {
   await requireUser(true);
   const key = text(formData, "key");
   if (!/^[a-z0-9-]{2,40}$/.test(key)) done("/admin/contenu", "Clé de section invalide.");
-  if (!text(formData, "titleFr") || !text(formData, "bodyFr")) done("/admin/contenu", "Le titre et le texte français sont obligatoires.");
+  if (!text(formData, "titleFr") || !text(formData, "bodyFr")) done(`/admin/contenu?key=${key}`, "Le titre et le texte français sont obligatoires.");
   await db().siteSection.upsert({
     where: { key },
     create: {
@@ -128,7 +192,7 @@ export async function saveSection(formData: FormData) {
     },
   });
   refreshSite();
-  done("/admin/contenu");
+  done(`/admin/contenu?key=${key}`);
 }
 
 export async function saveWhy(formData: FormData) {
@@ -166,6 +230,7 @@ export async function saveCareer(formData: FormData) {
     summaryFr: text(formData, "summaryFr"),
     summaryAr: text(formData, "summaryAr"),
     icon: text(formData, "icon") || "briefcase",
+    category: text(formData, "category").replace(/\s+/g, " ").slice(0, 40),
     sortOrder: order(formData),
     published: flag(formData, "published"),
   };
@@ -344,30 +409,68 @@ export async function deleteGallery(formData: FormData) {
   done("/admin/galerie");
 }
 
+const REGISTRATION_STATUSES = ["PENDING", "CONFIRMED", "CHECKED_IN", "CANCELLED"];
+
+function registrationsBack(formData: FormData) {
+  const back = text(formData, "back");
+  return back.startsWith("/admin/inscriptions") ? back : "/admin/inscriptions";
+}
+
+function backTo(path: string, error?: string): never {
+  const separator = path.includes("?") ? "&" : "?";
+  redirect(error ? `${path}${separator}error=${encodeURIComponent(error)}` : `${path}${separator}ok=1`);
+}
+
+function registrationIds(formData: FormData) {
+  return [...new Set(formData.getAll("id").map((value) => String(value).trim()).filter(Boolean))].slice(0, 500);
+}
+
+function refreshRegistrations() {
+  revalidatePath("/admin/inscriptions");
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
 export async function setRegistrationStatus(formData: FormData) {
   await requireUser(false);
-  const id = text(formData, "id");
+  const back = registrationsBack(formData);
+  const ids = registrationIds(formData);
   const status = text(formData, "status");
-  const allowed = ["PENDING", "CONFIRMED", "CHECKED_IN", "CANCELLED"];
-  if (!allowed.includes(status)) done("/admin/inscriptions", "Statut invalide.");
-  await db().registration.update({
-    where: { id },
+  if (!REGISTRATION_STATUSES.includes(status)) backTo(back, "Statut invalide.");
+  if (ids.length === 0) backTo(back, "Sélectionnez au moins une inscription.");
+  await db().registration.updateMany({
+    where: { id: { in: ids } },
     data: {
       status: status as RegistrationStatus,
       checkedInAt: status === "CHECKED_IN" ? new Date() : null,
     },
   });
-  revalidatePath("/admin/inscriptions");
-  revalidatePath("/");
-  done("/admin/inscriptions");
+  refreshRegistrations();
+  backTo(back);
+}
+
+export async function deleteRegistrations(formData: FormData) {
+  await requireUser(true);
+  const back = registrationsBack(formData);
+  const ids = registrationIds(formData);
+  if (ids.length === 0) backTo(back, "Sélectionnez au moins une inscription.");
+  const rows = await db().registration.findMany({ where: { id: { in: ids } }, select: { cvPath: true } });
+  await db().registration.deleteMany({ where: { id: { in: ids } } });
+  await Promise.all(
+    rows
+      .filter((row) => /^[a-f0-9]{32}.pdf$/.test(row.cvPath))
+      .map((row) => unlink(path.join(process.cwd(), "storage", "cv", row.cvPath)).catch(() => undefined)),
+  );
+  refreshRegistrations();
+  backTo(back);
 }
 
 export async function resendRegistration(formData: FormData) {
   await requireUser(false);
-  const id = text(formData, "id");
-  await deliverRegistration(id);
+  const back = registrationsBack(formData);
+  await deliverRegistration(text(formData, "id"));
   revalidatePath("/admin/inscriptions");
-  done("/admin/inscriptions");
+  backTo(back);
 }
 
 export async function checkInByToken(formData: FormData) {
@@ -390,11 +493,12 @@ export async function markMessage(formData: FormData) {
     where: { id: text(formData, "id") },
     data: { read: flag(formData, "read") },
   });
-  done("/admin/messages");
+  revalidatePath("/admin");
+  done(`/admin/messages?id=${encodeURIComponent(text(formData, "id"))}`);
 }
 
 export async function saveUser(formData: FormData) {
-  await requireUser(true);
+  await requireSuperAdmin();
   const parsed = userSchema.safeParse({
     id: text(formData, "id") || undefined,
     name: text(formData, "name"),
@@ -407,12 +511,14 @@ export async function saveUser(formData: FormData) {
   if (!parsed.data.id && password.length < 10) done("/admin/utilisateurs", "Le mot de passe doit contenir au moins 10 caractères.");
   if (password && password.length < 10) done("/admin/utilisateurs", "Le mot de passe doit contenir au moins 10 caractères.");
   const role = parsed.data.role as Role;
+  const taken = await db().user.findFirst({ where: { email: parsed.data.email, NOT: parsed.data.id ? { id: parsed.data.id } : undefined }, select: { id: true } });
+  if (taken) done("/admin/utilisateurs", "Cette adresse e-mail est déjà utilisée par un autre compte.");
   if (parsed.data.id) {
     const current = await db().user.findUnique({ where: { id: parsed.data.id } });
     if (!current) done("/admin/utilisateurs", "Compte introuvable.");
-    if (current.role === "ADMIN" && role !== "ADMIN") {
-      const others = await db().user.count({ where: { role: "ADMIN", active: true, NOT: { id: current.id } } });
-      if (others === 0) done("/admin/utilisateurs", "Conservez au moins un administrateur actif.");
+    if (current.role === "SUPER_ADMIN" && role !== "SUPER_ADMIN") {
+      const others = await db().user.count({ where: { role: "SUPER_ADMIN", active: true, NOT: { id: current.id } } });
+      if (others === 0) done("/admin/utilisateurs", "Conservez au moins un super administrateur actif.");
     }
     await db().user.update({
       where: { id: current.id },
@@ -437,15 +543,14 @@ export async function saveUser(formData: FormData) {
 }
 
 export async function toggleUser(formData: FormData) {
-  await requireUser(true);
-  const session = await requireUser(true);
+  const session = await requireSuperAdmin();
   const id = text(formData, "id");
   if (id === session.user.id) done("/admin/utilisateurs", "Vous ne pouvez pas désactiver votre propre compte.");
   const user = await db().user.findUnique({ where: { id } });
   if (!user) done("/admin/utilisateurs", "Compte introuvable.");
-  if (user.role === "ADMIN" && user.active) {
-    const others = await db().user.count({ where: { role: "ADMIN", active: true, NOT: { id } } });
-    if (others === 0) done("/admin/utilisateurs", "Conservez au moins un administrateur actif.");
+  if (user.role === "SUPER_ADMIN" && user.active) {
+    const others = await db().user.count({ where: { role: "SUPER_ADMIN", active: true, NOT: { id } } });
+    if (others === 0) done("/admin/utilisateurs", "Conservez au moins un super administrateur actif.");
   }
   await db().user.update({ where: { id }, data: { active: !user.active } });
   done("/admin/utilisateurs");

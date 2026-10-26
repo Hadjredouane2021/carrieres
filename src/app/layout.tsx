@@ -1,13 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { fontVariables } from "./fonts";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });
-const accent = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-instrument" });
-
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:8185"),
   title: {
     default: "Assur'Carrière — Le Forum des Métiers de l'Assurance 2026",
     template: "%s — Assur'Carrière",
@@ -37,7 +33,7 @@ export const instant = false;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" dir="ltr" data-scroll-behavior="smooth" className={`${inter.variable} ${display.variable} ${accent.variable} h-full`}>
+    <html lang="fr" dir="ltr" data-scroll-behavior="smooth" className={`${fontVariables} h-full`}>
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );

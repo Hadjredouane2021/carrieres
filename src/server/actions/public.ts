@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { CITIES } from "@/lib/constants";
+import { parseLevels } from "@/lib/education";
 import { createReference, createToken } from "@/lib/codes";
 import { db } from "@/lib/prisma";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
@@ -29,6 +30,10 @@ export async function registerParticipant(payload: unknown, cv: FormData): Promi
   const settings = await db().eventSettings.findUnique({ where: { id: "main" } });
   if (settings && !settings.registrationOpen) {
     return { ok: false, message: "Les inscriptions sont momentanément fermées." };
+  }
+  const levels = parseLevels(settings?.educationLevels).filter((level) => level.visible);
+  if (!levels.some((level) => level.value === data.educationLevel)) {
+    return { ok: false, message: "Choisissez un niveau d'études dans la liste." };
   }
   const capacity = settings?.capacity ?? 1500;
   const used = await db().registration.count({ where: { status: { not: "CANCELLED" } } });

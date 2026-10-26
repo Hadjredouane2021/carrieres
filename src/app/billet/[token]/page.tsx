@@ -44,8 +44,8 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
       <section className="surface-dark relative isolate overflow-clip bg-night pb-40 pt-32 text-white print:hidden md:pt-40">
         <div aria-hidden="true" className="absolute -top-40 end-[-10%] -z-10 size-[34rem] rounded-full bg-sun/25 blur-[120px]" />
         <div className="mx-auto max-w-4xl px-4 md:px-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sun">Assur&apos;Carrière · Forum 2026</p>
-          <h1 className="display mt-3 text-[clamp(2.4rem,6vw,4.4rem)] leading-[0.95]">Ton billet</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sun">Assur&apos;Carrière · Forum 2026</p>
+          <h1 className="display mt-3 text-[clamp(2.2rem,5vw,3.8rem)] leading-[0.97]">Ton billet</h1>
           <p className="mt-3 max-w-xl text-haze">Présente le QR code à l&apos;entrée, sur ton téléphone ou imprimé. Il est personnel : ne le partage pas.</p>
         </div>
       </section>
@@ -55,10 +55,10 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
           <div className="surface-dark relative isolate overflow-clip bg-night p-7 text-white sm:p-9">
             <div aria-hidden="true" className="absolute -bottom-24 -end-16 -z-10 size-64 rounded-full bg-sun/35 blur-[80px]" />
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sun">FMA · Forum 2026</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sun">FMA · Forum 2026</p>
               <span
                 className={cn(
-                  "rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
+                  "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]",
                   checkedIn ? "bg-emerald-400 text-night" : "border border-white/20 text-white",
                 )}
               >
@@ -72,16 +72,16 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
             {row.organization ? <p className="text-haze">{row.organization}</p> : null}
             <dl className="mt-10 grid gap-5 border-t border-dashed border-white/25 pt-6 sm:grid-cols-2">
               <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.24em] text-haze">Date</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.24em] text-haze">Date</dt>
                 <dd className="mt-1 font-medium first-letter:uppercase">{when}</dd>
               </div>
               <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.24em] text-haze">Lieu</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.24em] text-haze">Lieu</dt>
                 <dd className="mt-1 font-medium">{place}</dd>
                 {settings?.address ? <dd className="text-sm text-haze">{settings.address}</dd> : null}
               </div>
               <div>
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.24em] text-haze">Référence</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.24em] text-haze">Référence</dt>
                 <dd className="display mt-1 text-xl tracking-wide text-sun">{row.reference}</dd>
               </div>
             </dl>
